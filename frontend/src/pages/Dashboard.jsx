@@ -21,12 +21,14 @@ import Button from '../components/Button';
 import PageLayout from '../layouts/PageLayout';
 import PaymentModal from '../components/PaymentModal';
 import EmergencyButton from '../components/EmergencyButton';
+import HospitalStatsModal from '../components/HospitalStatsModal';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { selectedHospital } = useHospitalStore();
   const [paymentModal, setPaymentModal] = useState({ open: false, data: null });
+  const [statsOpen, setStatsOpen] = useState(false);
 
   // ✅ FIX 1: Call useReducedMotion as a hook (was imported but never called)
   const shouldReduceMotion = useReducedMotion();
@@ -129,7 +131,7 @@ const Dashboard = () => {
             </div>
             
             <div className="space-y-4">
-              <h1 className="text-5xl md:text-7xl font-black tracking-tighter font-display leading-[0.9]">
+              <h1 className="text-3xl md:text-4xl font-black tracking-tighter font-display leading-[1.1]">
                 {selectedHospital?.name}
               </h1>
               <div className="flex flex-wrap items-center gap-8 pt-2">
@@ -150,10 +152,11 @@ const Dashboard = () => {
           </div>
           
           <Button 
-            className="h-14 md:h-20 rounded-4xl px-10 text-lg font-black group bg-white text-slate-900 border-none shadow-2xl hover:bg-primary hover:text-white transition-all scale-100 hover:scale-[1.05]"
+            onClick={() => setStatsOpen(true)}
+            className="h-12 md:h-14 rounded-3xl px-7 text-sm font-black group bg-white text-slate-900 border-none shadow-2xl hover:bg-primary hover:text-white transition-all scale-100 hover:scale-[1.05]"
           >
             Hospital Stats
-            <ArrowRight size={24} className="ml-2 transition-transform group-hover:translate-x-1" />
+            <ArrowRight size={18} className="ml-2 transition-transform group-hover:translate-x-1" />
           </Button>
         </div>
       </header>
@@ -171,12 +174,12 @@ const Dashboard = () => {
           { icon: ShieldCheck, label: 'Safety Priority', value: 'High', color: 'warning' }
         ].map((stat, idx) => (
           <motion.div key={idx} variants={shouldReduceMotion ? {} : fadeUp}>
-            <Card hoverable className="p-6 md:p-8 border-none bg-white shadow-premium-subtle flex items-center gap-4 md:gap-6 rounded-[2.5rem] group h-full">
+            <Card hoverable className="p-6 md:p-8 border-none bg-slate-800/60 shadow-premium-subtle flex items-center gap-4 md:gap-6 rounded-[2.5rem] group h-full">
               <div className={`h-14 w-14 md:h-16 md:w-16 shrink-0 rounded-2xl bg-${stat.color}/10 text-${stat.color} flex items-center justify-center group-hover:bg-${stat.color} group-hover:text-white transition-all shadow-sm`}>
                 <stat.icon size={28} className="md:w-8 md:h-8" />
               </div>
               <div>
-                <div className="text-3xl md:text-4xl font-black text-slate-900 leading-none font-display tracking-tight">{stat.value}</div>
+                <div className="text-3xl md:text-4xl font-black text-white leading-none font-display tracking-tight">{stat.value}</div>
                 <div className="mt-1 md:mt-2 text-[10px] md:text-xs font-black uppercase tracking-widest text-slate-400">{stat.label}</div>
               </div>
             </Card>
@@ -190,8 +193,8 @@ const Dashboard = () => {
           <div className="flex items-center gap-6">
             <div className="h-14 w-2 bg-primary rounded-full shadow-[0_0_20px_rgba(37,99,235,0.4)]" />
             <div>
-              <h2 className="text-3xl font-black tracking-tight text-slate-900 font-display">Available Services</h2>
-              <p className="text-base font-medium text-slate-500">Pick a department and skip the physical queue instantly.</p>
+              <h2 className="text-3xl font-black tracking-tight text-white font-display">Available Services</h2>
+              <p className="text-base font-medium text-slate-400">Pick a department and skip the physical queue instantly.</p>
             </div>
           </div>
           <Badge variant="neutral" className="bg-slate-100 text-slate-500 border-none font-black text-[10px] uppercase tracking-widest px-4 py-2">
@@ -222,6 +225,13 @@ const Dashboard = () => {
         paymentData={paymentModal.data}
         onClose={() => setPaymentModal({ open: false, data: null })}
       />
+
+      {statsOpen && (
+        <HospitalStatsModal
+          hospital={selectedHospital}
+          onClose={() => setStatsOpen(false)}
+        />
+      )}
     </PageLayout>
   );
 };

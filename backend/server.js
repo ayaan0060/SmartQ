@@ -12,7 +12,7 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: process.env.CLIENT_URL || 'http://localhost:5173', methods: ['GET', 'POST', 'PATCH', 'DELETE'] },
+  cors: { origin: '*', methods: ['GET', 'POST', 'PATCH', 'DELETE'] },
   pingTimeout: 60000,
 });
 
@@ -21,7 +21,7 @@ app.locals.io = io;
 
 // ── Middleware ───────────────────────────────────────────────
 app.use(cors({
-  origin: process.env.CLIENT_URL || '*',
+  origin: (origin, cb) => cb(null, true),
   credentials: true,
 }));
 app.use(express.json({ 
@@ -185,8 +185,7 @@ io.on('connection', (socket) => {
 });
 
 // ── Database ─────────────────────────────────────────────────
-const MONGODB_URI = process.env.MONGODB_URI;
-if (!MONGODB_URI) { console.error('❌ MONGODB_URI not set in .env'); process.exit(1); }
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/smartqueue';
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('✅ MongoDB connected'))
   .catch(err => { console.error('❌ MongoDB Error:', err); process.exit(1); });

@@ -336,6 +336,16 @@ export default function Login() {
             </p>
           </div>
 
+          {/* Demo hint */}
+          <div
+            className="mt-8 rounded-xl px-4 py-3 text-center"
+            style={{ background: '#0F172A', border: '1px solid #1E293B' }}
+          >
+            <p className="text-xs" style={{ color: '#475569' }}>
+              Super Admin demo:{' '}
+              <span style={{ color: '#64748B' }}>email: superadmin@smartq.com · pass: Admin@1234</span>
+            </p>
+          </div>
         </div>
       </div>
     </div>

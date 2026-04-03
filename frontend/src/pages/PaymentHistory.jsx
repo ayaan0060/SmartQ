@@ -52,23 +52,23 @@ const PaymentHistory = () => {
   return (
     <PageLayout className="max-w-4xl mx-auto space-y-10 pb-12">
       <header className="flex items-center gap-6 px-2">
-        <div className="h-16 w-16 flex items-center justify-center rounded-3xl bg-slate-900 text-white shadow-xl shadow-slate-200">
+        <div className="h-16 w-16 flex items-center justify-center rounded-3xl bg-slate-800 text-white shadow-xl">
           <CreditCard size={30} />
         </div>
         <div className="space-y-1">
-          <h1 className="text-4xl font-black tracking-tight text-slate-900 font-display">Payment History</h1>
-          <p className="text-slate-500 font-medium">All your past transactions in one place.</p>
+          <h1 className="text-4xl font-black tracking-tight text-white font-display">Payment History</h1>
+          <p className="text-slate-400 font-medium">All your past transactions in one place.</p>
         </div>
       </header>
 
       <div className="space-y-4">
         {payments.length === 0 ? (
-          <Card className="p-16 text-center flex flex-col items-center justify-center border-none bg-white shadow-premium rounded-4xl">
-            <div className="h-24 w-24 rounded-full bg-slate-50 flex items-center justify-center text-slate-200 mb-8">
+          <Card className="p-16 text-center flex flex-col items-center justify-center border-none bg-slate-800/60 shadow-premium rounded-4xl">
+            <div className="h-24 w-24 rounded-full bg-slate-700 flex items-center justify-center text-slate-500 mb-8">
               <Ticket size={48} />
             </div>
-            <h3 className="text-2xl font-bold text-slate-900 font-display">No payments yet</h3>
-            <p className="text-slate-500 max-w-xs mt-3 font-medium">You haven't made any payments. Book a paid service to get started.</p>
+            <h3 className="text-2xl font-bold text-white font-display">No payments yet</h3>
+            <p className="text-slate-400 max-w-xs mt-3 font-medium">You haven't made any payments. Book a paid service to get started.</p>
             <Link
               to="/"
               className="mt-10 px-10 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/25 hover:scale-105 transition-transform"
@@ -85,15 +85,12 @@ const PaymentHistory = () => {
           >
             {payments.map((payment) => (
               <motion.div key={payment._id} variants={shouldReduceMotion ? {} : fadeUp}>
-                <Card className="flex flex-col md:flex-row md:items-center justify-between p-6 md:p-8 border-none bg-white shadow-premium hover:shadow-2xl hover:scale-[1.01] transition-all rounded-3xl">
-                  {/* Left section */}
+                <Card className="flex flex-col md:flex-row md:items-center justify-between p-6 md:p-8 border-none bg-slate-800/60 shadow-premium hover:shadow-2xl hover:scale-[1.01] transition-all rounded-3xl">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-                    {/* Amount bubble */}
-                    <div className="h-16 w-16 shrink-0 rounded-2xl bg-primary/5 text-primary flex flex-col items-center justify-center">
+                    <div className="h-16 w-16 shrink-0 rounded-2xl bg-primary/10 text-primary flex flex-col items-center justify-center">
                       <IndianRupee size={14} strokeWidth={3} className="opacity-60" />
                       <span className="text-xl font-black leading-none font-display">{payment.amount}</span>
                     </div>
-
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2">
                         <Building size={13} className="text-primary" />
@@ -101,13 +98,13 @@ const PaymentHistory = () => {
                           {payment.hospitalId?.name || 'Hospital'}
                         </span>
                       </div>
-                      <h4 className="text-xl font-bold text-slate-900">{payment.serviceId?.name || 'Service'}</h4>
+                      <h4 className="text-xl font-bold text-white">{payment.serviceId?.name || 'Service'}</h4>
                       <div className="flex items-center gap-4 text-xs font-bold text-slate-400">
                         <span className="flex items-center gap-1.5">
                           <Calendar size={12} />
                           {format(new Date(payment.createdAt), 'MMM dd, yyyy')}
                         </span>
-                        <div className="h-1 w-1 rounded-full bg-slate-200" />
+                        <div className="h-1 w-1 rounded-full bg-slate-600" />
                         <span className="flex items-center gap-1.5">
                           <Clock size={12} />
                           {format(new Date(payment.createdAt), 'hh:mm a')}
@@ -115,12 +112,10 @@ const PaymentHistory = () => {
                       </div>
                     </div>
                   </div>
-
-                  {/* Right section */}
-                  <div className="mt-6 md:mt-0 flex items-center justify-between md:justify-end gap-6 border-t border-slate-50 pt-6 md:border-0 md:pt-0">
+                  <div className="mt-6 md:mt-0 flex items-center justify-between md:justify-end gap-6 border-t border-slate-700 pt-6 md:border-0 md:pt-0">
                     <div className="text-right">
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Order ID</p>
-                      <p className="font-mono text-xs text-slate-500 font-bold">{payment.orderId}</p>
+                      <p className="font-mono text-xs text-slate-400 font-bold">{payment.orderId}</p>
                     </div>
                     <Badge
                       variant={payment.status === 'paid' ? 'success' : payment.status === 'failed' ? 'error' : 'warning'}

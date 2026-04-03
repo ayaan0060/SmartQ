@@ -15,11 +15,11 @@ const HeroHeader = ({
         </div>
       )}
       <div className="space-y-2 min-w-0">
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter text-slate-900 font-display leading-[1.1]">
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter text-white font-display leading-[1.1]">
           {title}
         </h1>
         {subtitle && (
-          <p className="text-lg md:text-xl text-slate-500 font-medium leading-relaxed">
+          <p className="text-lg md:text-xl text-slate-300 font-medium leading-relaxed">
             {subtitle}
           </p>
         )}

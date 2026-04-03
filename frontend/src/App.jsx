@@ -93,8 +93,14 @@ function AppContent() {
         </Route>
 
         {/* ── Patient Dashboard ──────────────── */}
-        <Route path="/dashboard" element={<ProtectedRoute requireHospital><Dashboard /></ProtectedRoute>} />
-        <Route path="/" element={<Navigate to="/home" replace />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute requireHospital>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
 
         <Route path="*" element={<NotFound />} />
       </Routes>

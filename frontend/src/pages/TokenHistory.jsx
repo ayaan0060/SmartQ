@@ -57,23 +57,23 @@ const TokenHistory = () => {
   return (
     <PageLayout className="max-w-4xl mx-auto space-y-10 pb-12">
       <header className="flex items-center gap-6 px-2">
-        <div className="h-16 w-16 flex items-center justify-center rounded-4xl bg-slate-900 text-white shadow-xl shadow-slate-200">
+        <div className="h-16 w-16 flex items-center justify-center rounded-4xl bg-slate-800 text-white shadow-xl">
           <History size={32} />
         </div>
         <div className="space-y-1">
-          <h1 className="text-4xl font-black tracking-tight text-slate-900 font-display">Your History</h1>
-          <p className="text-slate-500 font-medium">Review your past appointments and checkups.</p>
+          <h1 className="text-4xl font-black tracking-tight text-white font-display">Your History</h1>
+          <p className="text-slate-400 font-medium">Review your past appointments and checkups.</p>
         </div>
       </header>
 
       <div className="space-y-6">
         {tokens.length === 0 ? (
-          <Card className="p-16 text-center flex flex-col items-center justify-center border-none bg-white shadow-premium rounded-4xl">
-            <div className="h-24 w-24 rounded-full bg-slate-50 flex items-center justify-center text-slate-200 mb-8">
+          <Card className="p-16 text-center flex flex-col items-center justify-center border-none bg-slate-800/60 shadow-premium rounded-4xl">
+            <div className="h-24 w-24 rounded-full bg-slate-700 flex items-center justify-center text-slate-500 mb-8">
               <Ticket size={48} />
             </div>
-            <h3 className="text-2xl font-bold text-slate-900 font-display">No bookings found</h3>
-            <p className="text-slate-500 max-w-xs mt-3 font-medium">You haven't booked any tokens yet. Your journey with SmartQ starts here.</p>
+            <h3 className="text-2xl font-bold text-white font-display">No bookings found</h3>
+            <p className="text-slate-400 max-w-xs mt-3 font-medium">You haven't booked any tokens yet. Your journey with SmartQ starts here.</p>
             <Link 
               to="/" 
               className="mt-10 px-10 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/25 hover:scale-105 transition-transform"
@@ -91,25 +91,24 @@ const TokenHistory = () => {
             {tokens.map((token) => (
               <motion.div key={token._id} variants={shouldReduceMotion ? {} : fadeUp}>
                 <Link to={`/status/${token._id}`} className="block group">
-                  <Card className="flex flex-col md:flex-row md:items-center justify-between p-5 md:p-6 border-none bg-white shadow-premium hover:shadow-2xl hover:scale-[1.01] transition-all rounded-3xl group-hover:ring-2 group-hover:ring-primary/5">
+                  <Card className="flex flex-col md:flex-row md:items-center justify-between p-5 md:p-6 border-none bg-slate-800/60 shadow-premium hover:shadow-2xl hover:scale-[1.01] transition-all rounded-3xl group-hover:ring-2 group-hover:ring-primary/20">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4 md:gap-6">
-                      <div className="flex h-14 w-14 md:h-16 md:w-16 shrink-0 flex-col items-center justify-center rounded-2xl bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                      <div className="flex h-14 w-14 md:h-16 md:w-16 shrink-0 flex-col items-center justify-center rounded-2xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
                         <span className="text-[10px] font-black uppercase opacity-60 tracking-widest leading-none mb-1">No.</span>
                         <span className="text-xl md:text-2xl font-black leading-none font-display">{token.tokenNumber}</span>
                       </div>
-                      
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <Building size={14} className="text-primary" />
                           <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{token.hospitalId?.name}</span>
                         </div>
-                        <h4 className="text-xl font-bold text-slate-900">{token.serviceId?.name}</h4>
+                        <h4 className="text-xl font-bold text-white">{token.serviceId?.name}</h4>
                         <div className="flex items-center gap-4 text-xs font-bold text-slate-400">
                           <span className="flex items-center gap-1.5">
                             <Calendar size={12} />
                             {format(new Date(token.createdAt), 'MMM dd, yyyy')}
                           </span>
-                          <div className="h-1 w-1 rounded-full bg-slate-200" />
+                          <div className="h-1 w-1 rounded-full bg-slate-600" />
                           <span className="flex items-center gap-1.5">
                             <Clock size={12} />
                             {format(new Date(token.createdAt), 'hh:mm a')}
@@ -117,12 +116,11 @@ const TokenHistory = () => {
                         </div>
                       </div>
                     </div>
-
-                    <div className="mt-6 md:mt-0 flex items-center justify-between md:justify-end gap-6 border-t border-slate-50 pt-6 md:border-0 md:pt-0">
+                    <div className="mt-6 md:mt-0 flex items-center justify-between md:justify-end gap-6 border-t border-slate-700 pt-6 md:border-0 md:pt-0">
                       <Badge variant={token.status === 'completed' ? 'success' : token.status === 'waiting' ? 'primary' : 'warning'}>
                         {token.status.toUpperCase()}
                       </Badge>
-                      <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-300 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                      <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-700 text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
                         <ChevronRight size={20} className="transition-transform group-hover:translate-x-0.5" />
                       </div>
                     </div>

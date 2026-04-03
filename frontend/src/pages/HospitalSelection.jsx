@@ -173,17 +173,17 @@ const HospitalSelection = () => {
           </p>
         </div>
 
-        <div className="relative w-full max-w-xl mt-8 group">
+        <div className="relative w-full max-w-xl mt-4 group">
           <Search
-            className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors"
-            size={24}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors"
+            size={16}
           />
           <input
             type="text"
             placeholder="Search by name or location..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full h-16 pl-14 pr-6 bg-slate-800/50 border-2 border-slate-700 rounded-4xl focus:border-primary/50 focus:ring-4 focus:ring-primary/20 transition-all outline-none text-xl font-medium placeholder:text-slate-500 text-white"
+            className="w-full h-11 pl-10 pr-4 bg-slate-800/50 border-2 border-slate-700 rounded-2xl focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm font-medium placeholder:text-slate-500 text-white"
           />
         </div>
       </header>
@@ -252,37 +252,37 @@ const HospitalSelection = () => {
 
       {/* ── Recommended carousel (unchanged) ─────────────────────────────── */}
       {hospitals.length > 0 && !search && (
-        <div className="space-y-8">
+        <div className="space-y-4">
           <div className="flex items-center justify-between px-2">
-            <h2 className="text-2xl font-black text-white font-display">
+            <h2 className="text-lg font-black text-white font-display">
               Recommended for You
             </h2>
-            <button className="text-sm font-bold text-primary hover:bg-primary/5 px-4 py-2 rounded-xl transition-colors">
+            <button className="text-xs font-bold text-primary hover:bg-primary/5 px-3 py-1 rounded-lg transition-colors">
               View All
             </button>
           </div>
-          <div className="flex gap-8 overflow-x-auto pb-8 px-2 no-scrollbar scroll-smooth">
+          <div className="flex gap-5 overflow-x-auto pb-4 px-2 no-scrollbar scroll-smooth">
             {hospitals.slice(0, 3).map(hospital => (
               <Card
                 key={hospital._id}
                 onClick={() => handleSelect(hospital)}
-                className="min-w-[320px] md:min-w-[400px] p-8 cursor-pointer group hover:border-primary/50 hover:scale-[1.02] transition-all h-60 flex flex-col justify-between border-none shadow-premium rounded-[2.5rem]"
+                className="min-w-[300px] md:min-w-[380px] p-6 cursor-pointer group hover:border-primary/50 hover:scale-[1.02] transition-all flex flex-col justify-between border-none shadow-premium rounded-3xl"
               >
                 <div className="flex justify-between items-start">
-                  <Card className="p-8 border-none bg-slate-800/50 flex flex-col items-center justify-center gap-4 rounded-4xl hover:scale-[1.02] transition-transform">
-                    <Building2 size={28} />
-                  </Card>
+                  <div className="h-12 w-12 rounded-xl bg-slate-800/50 flex items-center justify-center">
+                    <Building2 size={24} />
+                  </div>
                   <div className="flex items-center gap-1.5 bg-yellow-400/10 text-yellow-600 px-3 py-1.5 rounded-xl text-xs font-black">
-                    <Star size={14} fill="currentColor" />
+                    <Star size={12} fill="currentColor" />
                     {hospital.rating || '4.8'}
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <h3 className="text-2xl font-black text-white group-hover:text-primary transition-colors font-display line-clamp-1">
+                <div className="space-y-1.5 mt-5">
+                  <h3 className="text-lg font-black text-white group-hover:text-primary transition-colors font-display line-clamp-1">
                     {hospital.name}
                   </h3>
-                  <p className="text-sm text-slate-400 font-bold flex items-center gap-1.5 uppercase tracking-wider">
-                    <MapPin size={14} className="text-primary" />
+                  <p className="text-xs text-slate-400 font-bold flex items-center gap-1.5 uppercase tracking-wider">
+                    <MapPin size={11} className="text-primary" />
                     {hospital.location}
                   </p>
                 </div>
