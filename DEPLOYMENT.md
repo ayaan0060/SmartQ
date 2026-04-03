@@ -23,4 +23,4 @@ Follow these steps to take your **SmartQ** application live!
 - **Socket.io:** Ensure your frontend socket connection string in `src/services/socket.js` also points to the live backend.
 - **CORS:** Your backend `server.js` should allow your frontend's live URL.
 
-Good luck with your launch! 🚀
+Good luck with your launch! 
