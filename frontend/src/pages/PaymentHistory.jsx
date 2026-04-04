@@ -70,7 +70,7 @@ const PaymentHistory = () => {
             <h3 className="text-2xl font-bold text-slate-900 font-display">No payments yet</h3>
             <p className="text-slate-500 max-w-xs mt-3 font-medium">You haven't made any payments. Book a paid service to get started.</p>
             <Link
-              to="/"
+              to="/dashboard"
               className="mt-10 px-10 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/25 hover:scale-105 transition-transform"
             >
               Book a Service

@@ -397,6 +397,7 @@ export default function Home() {
   const navigate       = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
   const { selectedHospital, clearSelectedHospital } = useHospitalStore();
+  const [sosOpen, setSosOpen] = useState(false);
 
   const isSuperAdmin = user?.role === 'super-admin';
   const isHospAdmin  = user?.role === 'hospital-admin';
@@ -750,7 +751,6 @@ export default function Home() {
   }
 
   /* ─── PATIENT VIEW ───────────────────── */
-  const [sosOpen, setSosOpen] = useState(false);
   return (
     <div className="min-h-screen w-full" style={{ background: '#080C17' }}>
       <TopNav user={user} onLogout={handleLogout} />
@@ -771,7 +771,7 @@ export default function Home() {
             </p>
             <div className="flex gap-3">
               {selectedHospital ? (
-                <Link to="/"
+                <Link to="/dashboard"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-extrabold text-white"
                   style={{ background: 'linear-gradient(135deg,#4c1d95,#8B5CF6)', boxShadow: '0 4px 20px rgba(139,92,246,0.3)' }}>
                   <QrCode size={16}/> Book a Token

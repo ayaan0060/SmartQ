@@ -137,7 +137,7 @@ const TokenStatus = () => {
         </div>
         <h3 className="text-3xl font-black text-slate-900 font-display">Token Expired</h3>
         <p className="text-slate-500 max-w-sm mt-4 text-lg font-medium">The requested token session has either ended or could not be found in our records.</p>
-        <Link to="/" className="mt-10">
+        <Link to="/dashboard" className="mt-10">
           <Badge variant="primary" className="px-8 py-4 text-base rounded-2xl hover:scale-105 transition-transform">
             Return to Dashboard
           </Badge>
@@ -152,7 +152,7 @@ const TokenStatus = () => {
 
   return (
     <PageLayout className="mx-auto max-w-6xl space-y-12 pb-24">
-      <Link to="/" className="inline-flex items-center text-sm font-black text-slate-400 hover:text-primary transition-all gap-3 group px-4">
+      <Link to="/dashboard" className="inline-flex items-center text-sm font-black text-slate-400 hover:text-primary transition-all gap-3 group px-4">
         <div className="p-2 rounded-xl bg-slate-100 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
           <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
         </div>

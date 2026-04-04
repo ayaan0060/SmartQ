@@ -205,6 +205,8 @@ const HospitalRegister = () => {
         timings:         fields.timings.trim(),
         contact:         fields.contact.trim(),
         rating:          fields.rating ? parseFloat(fields.rating) : 0,
+        latitude:        fields.latitude !== '' ? parseFloat(fields.latitude) : undefined,
+        longitude:       fields.longitude !== '' ? parseFloat(fields.longitude) : undefined,
         adminName:       fields.adminName.trim(),
         adminEmail:      fields.adminEmail.trim(),
         adminPassword:   fields.adminPassword,

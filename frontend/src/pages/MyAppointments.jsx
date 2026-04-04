@@ -45,7 +45,7 @@ export default function MyAppointments() {
 
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/')} className="rounded-xl p-2"
+            <button onClick={() => navigate('/dashboard')} className="rounded-xl p-2"
               style={{ background: '#1E293B', color: '#94A3B8' }}>
               <ArrowLeft size={18} />
             </button>

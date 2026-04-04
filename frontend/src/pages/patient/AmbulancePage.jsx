@@ -305,7 +305,7 @@ const AmbulancePage = () => {
           style={{ background: '#0D1117', borderBottom: '1px solid #1E293B', minHeight: '56px' }}
         >
           <Link
-            to="/"
+            to="/dashboard"
             className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors"
             style={{ color: '#64748B' }}
             onMouseEnter={e => e.currentTarget.style.background = '#1E293B'}

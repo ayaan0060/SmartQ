@@ -23,6 +23,8 @@ const HospitalSchema = new mongoose.Schema({
   },
   adminId:         { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   logoUrl:         { type: String, default: null },
+  latitude:        { type: Number, default: null },
+  longitude:       { type: Number, default: null },
   coordinates: {
     lat: { type: Number, default: null },
     lng: { type: Number, default: null },

@@ -15,7 +15,7 @@ export default function BackButton({ className = '', style = {} }) {
     if (document.referrer && document.referrer.includes(window.location.host)) {
       navigate(-1);
     } else {
-      navigate('/home');
+      navigate('/');
     }
   };
 

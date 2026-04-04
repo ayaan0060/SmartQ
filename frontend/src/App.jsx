@@ -78,7 +78,7 @@ function AppContent() {
       <Routes location={location}>
         {/* ── Public Routes ──────────────────── */}
         {/* Bug fix: / redirects to /home for guests; /home is the landing page */}
-        <Route path="/home" element={<Home />} />
+        <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/register-hospital" element={<HospitalRegister />} />
@@ -118,7 +118,7 @@ function AppContent() {
 
         {/* ── Patient Dashboard ──────────────── */}
         <Route
-          path="/"
+          path="/dashboard"
           element={
             <ProtectedRoute requireHospital>
               <Dashboard />

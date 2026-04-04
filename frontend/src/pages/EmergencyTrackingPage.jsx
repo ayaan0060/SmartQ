@@ -132,7 +132,7 @@ export default function EmergencyTrackingPage() {
 
       {/* Top bar */}
       <header className="flex items-center gap-3 px-4 py-3 shrink-0" style={{ background: '#0D1117', borderBottom: '1px solid #1E293B' }}>
-        <Link to="/" className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors" style={{ color: '#64748B' }}
+        <Link to="/dashboard" className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors" style={{ color: '#64748B' }}
           onMouseEnter={e => e.currentTarget.style.background = '#1E293B'}
           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
           <ArrowLeft size={18} />

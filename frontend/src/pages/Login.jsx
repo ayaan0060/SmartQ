@@ -40,7 +40,7 @@ export default function Login() {
       if (user?.role === 'receptionist') navigate('/reception', { replace: true });
       else if (user?.role === 'doctor') navigate('/doctor', { replace: true });
       else if (['super-admin', 'hospital-admin', 'staff'].includes(user?.role)) navigate('/admin', { replace: true });
-      else navigate('/home', { replace: true });
+      else navigate('/dashboard', { replace: true });
     }
   }, [authToken, navigate]);
 

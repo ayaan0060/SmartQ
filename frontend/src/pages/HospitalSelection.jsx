@@ -125,7 +125,7 @@ const HospitalSelection = () => {
   // ── Handlers ────────────────────────────────────────────────────────────────
   const handleSelect = useCallback((hospital) => {
     setSelectedHospital(hospital);
-    navigate('/');
+    navigate('/dashboard');
   }, [setSelectedHospital, navigate]);
 
   const handleGetDirections = useCallback((hospital) => {

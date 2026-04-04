@@ -19,7 +19,17 @@ import { cn } from '../utils/cn';
 const HospitalCard = ({ hospital, onSelect, isNearest = false, distanceKm, onGetDirections }) => {
   const handleDirectionsClick = useCallback((e) => {
     e.stopPropagation();
-    onGetDirections?.(hospital);
+    const lat = hospital?.latitude ?? hospital?.coordinates?.lat;
+    const lng = hospital?.longitude ?? hospital?.coordinates?.lng;
+    if (lat != null && lng != null && !isNaN(lat) && !isNaN(lng)) {
+      window.open(
+        `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
+        '_blank',
+        'noopener,noreferrer'
+      );
+    } else {
+      onGetDirections?.(hospital);
+    }
   }, [onGetDirections, hospital]);
 
   const handleSelectClick = useCallback((e) => {
