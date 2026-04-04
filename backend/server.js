@@ -235,13 +235,47 @@ io.on('connection', (socket) => {
 });
 
 // ── Database ─────────────────────────────────────────────────
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/smartqueue';
-mongoose.connect(MONGODB_URI)
-  .then(() => {
-    console.log('✅ MongoDB connected');
-    startDoctorScheduler();
-  })
-  .catch(err => { console.error('❌ MongoDB Error:', err); process.exit(1); });
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/smartq';
+
+const connectWithRetry = (retries = 5, delay = 5000) => {
+  console.log(`🔄 Connecting to MongoDB... (attempts left: ${retries})`);
+  mongoose.connect(MONGODB_URI)
+    .then(() => {
+      console.log('✅ MongoDB connected');
+      startDoctorScheduler();
+    })
+    .catch(err => {
+      console.error('❌ MongoDB connection error:', err.message);
+      if (retries > 0) {
+        console.log(`⏳ Retrying in ${delay / 1000}s...`);
+        setTimeout(() => connectWithRetry(retries - 1, delay), delay);
+      } else {
+        console.error('❌ All MongoDB connection attempts failed. Exiting.');
+        process.exit(1);
+      }
+    });
+};
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('⚠️ MongoDB disconnected. Attempting reconnect...');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB runtime error:', err.message);
+});
+
+connectWithRetry();
+
+// ── Global error handlers (prevent Render crash on stray errors) ──
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('⚠️ Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('🔥 Uncaught Exception:', err);
+  // Give time for logs to flush, then exit so Render can restart
+  setTimeout(() => process.exit(1), 1000);
+});
 
 // ── Start Server ─────────────────────────────────────────────
 const PORT = process.env.PORT || 5001;
@@ -250,3 +284,4 @@ server.listen(PORT, () => {
 });
 
 module.exports = { app, io };
+
