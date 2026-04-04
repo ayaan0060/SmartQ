@@ -220,7 +220,7 @@ const registerWithAdmin = asyncHandler(async (req, res) => {
   const token = jwt.sign(
     { userId: savedAdmin._id, role: savedAdmin.role, hospitalId: savedAdmin.hospitalId },
     process.env.JWT_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
 
   return success(res, { token, user: savedAdmin.toJSON(), hospital: savedHospital }, 201, 'Hospital registered successfully');

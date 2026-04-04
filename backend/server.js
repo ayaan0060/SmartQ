@@ -61,8 +61,8 @@ const startDoctorScheduler = () => {
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: '*', methods: ['GET', 'POST', 'PATCH', 'DELETE'] },
-  pingTimeout: 60000,
+  cors: { origin: process.env.CLIENT_URL || '*', methods: ['GET', 'POST', 'PATCH', 'DELETE'] },
+  pingTimeout: parseInt(process.env.SOCKET_PING_TIMEOUT) || 60000,
 });
 
 // Make io accessible in controllers via req.app.locals
@@ -83,15 +83,15 @@ app.use(express.urlencoded({ extended: true }));
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 min
-  max: 200,
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_MAX) || 200,
   message: { success: false, message: 'Too many requests, please try again later.' }
 });
 app.use('/api/', limiter);
 
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'production' ? 20 : 100,
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+  max: parseInt(process.env.AUTH_RATE_LIMIT_MAX) || (process.env.NODE_ENV === 'production' ? 20 : 100),
   message: { success: false, message: 'Too many login attempts. Please try again in 15 minutes.' }
 });
 
