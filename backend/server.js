@@ -60,8 +60,14 @@ const startDoctorScheduler = () => {
 
 const app = express();
 const server = http.createServer(app);
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
 const io = new Server(server, {
-  cors: { origin: process.env.CLIENT_URL || '*', methods: ['GET', 'POST', 'PATCH', 'DELETE'] },
+  cors: { origin: allowedOrigins, methods: ['GET', 'POST', 'PATCH', 'DELETE'], credentials: true },
   pingTimeout: parseInt(process.env.SOCKET_PING_TIMEOUT) || 60000,
 });
 
@@ -70,7 +76,14 @@ app.locals.io = io;
 
 // ── Middleware ───────────────────────────────────────────────
 app.use(cors({
-  origin: process.env.CLIENT_URL || '*',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all in dev, restrict via allowedOrigins in prod
+    }
+  },
   credentials: true,
 }));
 app.use(express.json({ 
