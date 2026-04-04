@@ -20,6 +20,7 @@ const DoctorSchema = new mongoose.Schema({
   },
   avatar:         { type: String, default: null },
   totalPatients:  { type: Number, default: 0 },
+  lastActivity:   { type: Date, default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Doctor', DoctorSchema);

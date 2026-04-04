@@ -40,6 +40,10 @@ const SettingsPage       = lazy(() => import('./pages/admin/SettingsPage'));
 const HospitalDetailPage = lazy(() => import('./pages/admin/HospitalDetailPage'));
 const AmbulancesPage     = lazy(() => import('./pages/admin/AmbulancesPage'));
 const ReceptionistPage   = lazy(() => import('./pages/ReceptionistPage'));
+const DisplayBoard       = lazy(() => import('./pages/DisplayBoard'));
+const DoctorPortal       = lazy(() => import('./pages/DoctorPortal'));
+const AppointmentBooking = lazy(() => import('./pages/AppointmentBooking'));
+const MyAppointments     = lazy(() => import('./pages/MyAppointments'));
 
 const LoadingFallback = () => (
   <div className="flex min-h-screen items-center justify-center" style={{ background: '#0B0F19' }}>
@@ -70,6 +74,10 @@ function AppContent() {
         <Route path="/emergency/:requestId" element={<ProtectedRoute><EmergencyTracking /></ProtectedRoute>} />
         <Route path="/ambulance" element={<ProtectedRoute><AmbulancePage /></ProtectedRoute>} />
         <Route path="/reception" element={<ProtectedRoute><ReceptionistPage /></ProtectedRoute>} />
+        <Route path="/display/:hospitalId" element={<DisplayBoard />} />
+        <Route path="/doctor" element={<ProtectedRoute><DoctorPortal /></ProtectedRoute>} />
+        <Route path="/book-appointment" element={<ProtectedRoute><AppointmentBooking /></ProtectedRoute>} />
+        <Route path="/appointments" element={<ProtectedRoute><MyAppointments /></ProtectedRoute>} />
 
         {/* ── Admin Panel Routes ─────────────── */}
         <Route

@@ -20,6 +20,9 @@ export default function StaffPage() {
   const [receptionistModal, setReceptionistModal] = useState(false);
   const [receptionistForm, setReceptionistForm] = useState({ name: '', email: '', password: '' });
   const [receptionistLoading, setReceptionistLoading] = useState(false);
+  const [doctorAccountModal, setDoctorAccountModal] = useState(false);
+  const [doctorAccountForm, setDoctorAccountForm] = useState({ name: '', email: '', password: '', doctorId: '' });
+  const [doctorAccountLoading, setDoctorAccountLoading] = useState(false);
 
   useEffect(() => {
     const valid = STAFF_ROLE_FILTERS.some((x) => x.id === roleParam);
@@ -55,6 +58,21 @@ export default function StaffPage() {
       toast.error(err?.response?.data?.message || 'Failed to create receptionist');
     } finally {
       setReceptionistLoading(false);
+    }
+  };
+
+  const handleCreateDoctorAccount = async (e) => {
+    e.preventDefault();
+    setDoctorAccountLoading(true);
+    try {
+      await api.post('/auth/register-doctor', doctorAccountForm);
+      toast.success('Doctor account created! They can now log in at /login.');
+      setDoctorAccountModal(false);
+      setDoctorAccountForm({ name: '', email: '', password: '', doctorId: '' });
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to create doctor account');
+    } finally {
+      setDoctorAccountLoading(false);
     }
   };
 
@@ -116,6 +134,9 @@ export default function StaffPage() {
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           <button type="button" className="btn btn-secondary" onClick={openCreateDoctor}>
             <Stethoscope size={16} /> Add doctor
+          </button>
+          <button type="button" className="btn btn-secondary" onClick={() => setDoctorAccountModal(true)}>
+            <Stethoscope size={16} /> Doctor Login
           </button>
           <button type="button" className="btn btn-secondary" onClick={() => setReceptionistModal(true)}>
             <UserPlus size={16} /> Add receptionist
@@ -221,6 +242,59 @@ export default function StaffPage() {
                 <button type="submit" disabled={receptionistLoading}
                   className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white" style={{ background: '#2563EB', opacity: receptionistLoading ? 0.7 : 1 }}>
                   {receptionistLoading ? 'Creating...' : 'Create Account'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Doctor Account Modal */}
+      {doctorAccountModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
+          <div className="w-full max-w-md rounded-2xl p-6 space-y-5" style={{ background: '#0D1117', border: '1px solid #1E293B' }}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-white">Create Doctor Login Account</h2>
+              <button onClick={() => setDoctorAccountModal(false)} style={{ color: '#6B7280' }}><X size={20} /></button>
+            </div>
+            <p className="text-xs" style={{ color: '#6B7280' }}>Doctor will log in at <span className="text-blue-400">/login</span> and see their patient queue at <span className="text-blue-400">/doctor</span>.</p>
+            <form onSubmit={handleCreateDoctorAccount} className="space-y-4">
+              {[{ label: 'Full Name', key: 'name', type: 'text', placeholder: 'Dr. John Smith' },
+                { label: 'Email', key: 'email', type: 'email', placeholder: 'doctor@hospital.com' },
+                { label: 'Password', key: 'password', type: 'password', placeholder: 'Min 8 characters' }]
+                .map(({ label, key, type, placeholder }) => (
+                  <div key={key} className="space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#94A3B8' }}>{label}</label>
+                    <input type={type} placeholder={placeholder} required
+                      value={doctorAccountForm[key]}
+                      onChange={e => setDoctorAccountForm(f => ({ ...f, [key]: e.target.value }))}
+                      className="w-full rounded-xl px-4 py-2.5 text-sm text-white outline-none"
+                      style={{ background: '#0F172A', border: '1px solid #1E293B' }}
+                      onFocus={e => e.target.style.border = '1px solid #2563EB'}
+                      onBlur={e => e.target.style.border = '1px solid #1E293B'} />
+                  </div>
+                ))}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#94A3B8' }}>Link to Doctor Profile (optional)</label>
+                <select value={doctorAccountForm.doctorId}
+                  onChange={e => setDoctorAccountForm(f => ({ ...f, doctorId: e.target.value }))}
+                  className="w-full rounded-xl px-4 py-2.5 text-sm outline-none"
+                  style={{ background: '#0F172A', border: '1px solid #1E293B', color: '#E2E8F0' }}
+                  onFocus={e => e.target.style.border = '1px solid #2563EB'}
+                  onBlur={e => e.target.style.border = '1px solid #1E293B'}>
+                  <option value="">Select doctor profile...</option>
+                  {(data?.staff || []).filter(s => s._type === 'doctor' || s.specialization).map(d => (
+                    <option key={d._id} value={d._id} style={{ background: '#0D1117' }}>{d.name} — {d.specialization}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setDoctorAccountModal(false)}
+                  className="flex-1 rounded-xl py-2.5 text-sm font-semibold" style={{ background: '#1E293B', color: '#94A3B8' }}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={doctorAccountLoading}
+                  className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white" style={{ background: '#2563EB', opacity: doctorAccountLoading ? 0.7 : 1 }}>
+                  {doctorAccountLoading ? 'Creating...' : 'Create Account'}
                 </button>
               </div>
             </form>

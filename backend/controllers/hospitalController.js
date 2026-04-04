@@ -283,7 +283,20 @@ const reject = asyncHandler(async (req, res) => {
     { new: true }
   );
   if (!hospital) return error(res, 'Hospital not found', 404);
-  return success(res, { hospital }, 200, 'Hospital registration rejected');
+  await User.updateMany({hospitalId:req.params.id,role:{$in:["hospital-admin","receptionist","doctor","staff"]}},{isActive:false});
+  return success(res,{hospital},200,"Hospital rejected and all linked accounts deactivated");
 });
 
-module.exports = { getAll, getOne, getHospitalDoctors, getHospitalPatients, getHospitalQueue, registerWithAdmin, create, update, remove, getStats, approve, reject };
+// ─── PATCH /api/hospitals/:id/settings ────────────────────────────────────────
+const updateSettings = asyncHandler(async (req, res) => {
+  const { doctorInactivityMinutes } = req.body;
+  const hospital = await Hospital.findByIdAndUpdate(
+    req.params.id,
+    { 'settings.doctorInactivityMinutes': parseInt(doctorInactivityMinutes) || 30 },
+    { new: true }
+  );
+  if (!hospital) return error(res, 'Hospital not found', 404);
+  return success(res, { hospital }, 200, 'Settings updated');
+});
+
+module.exports = { getAll, getOne, getHospitalDoctors, getHospitalPatients, getHospitalQueue, registerWithAdmin, create, update, remove, getStats, approve, reject, updateSettings };

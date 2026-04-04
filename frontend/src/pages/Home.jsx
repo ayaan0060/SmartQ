@@ -14,7 +14,6 @@ import { useHospitalStore } from '../features/hospital/useHospitalStore';
 import { AuthService } from '../features/auth/AuthService';
 import EmergencyPill from '../components/home/EmergencyPill';
 import SOSModal      from '../components/home/SOSModal';
-import TriageBot     from '../components/TriageBot';
 
 /* ── animation presets ───────────────────── */
 const fadeUp = {
@@ -516,7 +515,6 @@ export default function Home() {
         </Section>
 
         {/* ⑦ FOOTER */}
-        <TriageBot services={[]} onBook={() => navigate('/select-hospital')} />
         <Divider />
         <Section className="py-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -824,7 +822,6 @@ export default function Home() {
 
       {/* SOS Modal */}
       <SOSModal isOpen={sosOpen} onClose={() => setSosOpen(false)} />
-      <TriageBot services={[]} onBook={() => navigate('/select-hospital')} />
 
       <Divider />
 

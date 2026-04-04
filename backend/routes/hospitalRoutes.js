@@ -42,9 +42,10 @@ router.get('/:id/patients', ctrl.getHospitalPatients);
 router.get('/:id/queue',    ctrl.getHospitalQueue);
 
 // Mutations
-router.patch('/:id',         authorize('super-admin', 'hospital-admin'), ctrl.update);
-router.patch('/:id/approve', authorize('super-admin'), ctrl.approve);
-router.patch('/:id/reject',  authorize('super-admin'), ctrl.reject);
-router.delete('/:id',        authorize('super-admin'), ctrl.remove);
+router.patch('/:id',          authorize('super-admin', 'hospital-admin'), ctrl.update);
+router.patch('/:id/approve',  authorize('super-admin'), ctrl.approve);
+router.patch('/:id/reject',   authorize('super-admin'), ctrl.reject);
+router.patch('/:id/settings', authorize('super-admin', 'hospital-admin'), ctrl.updateSettings);
+router.delete('/:id',         authorize('super-admin'), ctrl.remove);
 
 module.exports = router;

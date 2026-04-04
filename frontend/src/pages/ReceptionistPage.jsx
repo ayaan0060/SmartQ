@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, CheckCircle2, SkipForward, XCircle, Clock, Users, Zap, LogOut, Plus, X } from 'lucide-react';
+import { Play, CheckCircle2, SkipForward, XCircle, Clock, Users, Zap, LogOut, Plus, X, Monitor } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
 import { useAuthStore } from '../features/auth/useAuthStore';
@@ -177,6 +177,13 @@ export default function ReceptionistPage() {
           <h1 className="text-lg font-bold text-white">{hospitalName || 'SmartQ'}</h1>
         </div>
         <div className="flex items-center gap-4">
+          <button
+            onClick={() => window.open(`/display/${hospitalId}`, '_blank')}
+            className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all"
+            style={{ background: '#1E293B', color: '#94A3B8', border: '1px solid #334155' }}
+          >
+            <Monitor size={15} /> Display Board
+          </button>
           <button
             onClick={() => setShowAddModal(true)}
             className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-all"

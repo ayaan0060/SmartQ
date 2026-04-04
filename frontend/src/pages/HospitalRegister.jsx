@@ -211,9 +211,7 @@ const HospitalRegister = () => {
         confirmPassword: fields.confirmPassword,
       };
       const res = await api.post('/hospitals/register', payload);
-      const { token, user, hospital } = res.data.data;
-      setAuth(user, token, hospital.name);
-      localStorage.setItem('token', token);
+      const { hospital } = res.data.data;
       setSubmitted(true);
       toast.success(`Registration submitted! We'll review ${hospital.name} within 24–48 hours.`);
     } catch (err) {

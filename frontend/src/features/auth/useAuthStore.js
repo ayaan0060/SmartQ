@@ -9,14 +9,14 @@ export const useAuthStore = create()(
       hospitalName: null,
       isAuthenticated: false,
 
-      setAuth: (user, token, hospitalName = null) => set({ user, token, hospitalName, isAuthenticated: !!user }),
+      setAuth: (user, token, hospitalName = null, hospitalStatus = null) => set({ user, token, hospitalName, hospitalStatus, isAuthenticated: !!user }),
 
       logout: () => {
         localStorage.removeItem('token');
-        set({ user: null, token: null, hospitalName: null, isAuthenticated: false });
+        set({ user: null, token: null, hospitalName: null, hospitalStatus: null, isAuthenticated: false });
       },
 
-      clearAuth: () => set({ user: null, token: null, hospitalName: null, isAuthenticated: false }),
+      clearAuth: () => set({ user: null, token: null, hospitalName: null, hospitalStatus: null, isAuthenticated: false }),
 
       setUser: (user) => set({ user }),
       setHospitalName: (hospitalName) => set({ hospitalName }),
@@ -37,6 +37,7 @@ export const useAuthStore = create()(
         user: state.user,
         token: state.token,
         hospitalName: state.hospitalName,
+        hospitalStatus: state.hospitalStatus,
         isAuthenticated: state.isAuthenticated,
       }),
     }

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="msapplication-TileColor" content="#0E0E0E">
+    <meta name="template-color" content="#0E0E0E">
+    <meta name="description" content="Phone email login template 1">
+    <meta name="keywords" content="free SMS,OTP,phone email,free sms otp service">
+    <meta name="author" content="">
+    <link rel="stylesheet" href="https://www.phone.email/external_assets/css/pestyle.css">
+    <title>PE Phone - Register Template - 01</title>
+</head>
+
+<body class="body-style-1">
+
+    <main class="my-5">
+        <div class="container">
+            <div class="card p-3 pe-card-full">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <img src="https://www.phone.email/external_assets/images/pe-reg-illustration-01.svg"
+                            alt="phone registration template" class="rounded-3">
+                    </div>
+                    <div class="col-md-6">
+                        <div class="my-3 text-center">
+                            <h3>Get Started</h3>
+                            <p class="my-2">Already have account? <a href="" class="text-success fw-semibold">Sign
+                                    in</a>
+                            </p>
+                        </div>
+                        <!-- Form -->
+                        <form action="" class="p-4">
+                            <div class="form-group mb-4">
+                                <label class="font-sm color-grey-300">First Name</label>
+                                <input type="text" class="pe-input-line font-md py-1 ps-0" id="txt_fname">
+                                <div class="pe-line-box">
+                                    <div class="pe-line"></div>
+                                </div>
+                            </div>
+                            <div class="form-group mb-4">
+                                <label class="font-sm color-grey-300">Last Name</label>
+                                <input type="text" class="pe-input-line font-md py-1 ps-0" id="txt_lname">
+                                <div class="pe-line-box">
+                                    <div class="pe-line"></div>
+                                </div>
+                            </div>
+                            <div class="form-group mb-4">
+                                <label class="font-sm color-grey-300">City</label>
+                                <input type="text" class="pe-input-line font-md py-1 ps-0" id="txt_city">
+                                <div class="pe-line-box">
+                                    <div class="pe-line"></div>
+                                </div>
+                            </div>
+                            <!-- PE Button Code -->
+                            <div class="d-flex align-items-center justify-content-center my-3">
+                                <!-- Button Code Starts -->
+                                <div class="pe_signin_button" data-client-id="">
+                                    <script src="https://www.phone.email/sign_in_button_v1.js" async></script>
+                                </div>
+                                <script>
+                                    function phoneEmailListener(userObj) {
+                                        var user_json_url = userObj.user_json_url;
+                                        var user_country_code = userObj.user_country_code;
+                                        var user_phone_number = userObj.user_phone_number;
+                                        var fname = document.getElementById('txt_fname').value;
+                                        var lname = document.getElementById('txt_lname').value;
+                                        var city = document.getElementById('txt_city').value;
+                                        alert('Registration SUCCESSFUL !!\nYour phone number ' + user_country_code + ' ' + user_phone_number + ' has been authenticated. Your name is - '+fname+' '+lname+' and city is '+city+'');
+                                        // You can submit your form here or redirect user to post login dashboard page
+                                        // Send user_json_url to your backend to retrieve user info (i.e. country code and phone number) from this URL.
+                                    }
+                                </script>
+                                <!-- Button Code Ends -->
+                            </div>
+                        </form>
+                    </div> <!-- Col 6 Ends-->
+                </div>
+            </div> <!--Card Ends-->
+
+
+            <div class="card pe-card-full d-none">
+                <div class="row align-items-center">
+                    <div class="col-md-6 p-3">
+                        <img src="https://www.phone.email/external_assets/images/pe-reg-illustration-01.svg"
+                            alt="phone email template" class="rounded-3">
+                    </div>
+                    <div class="col-md-6 p-3">
+                        <div class="my-3 text-center border p-3 bg-light rounded-3">
+                            <h3>Login</h3>
+                            <p class="my-2">Don't have an account? <a href="" class="text-success fw-semibold">Sign
+                                    up</a>
+                            </p>
+
+                            <div class="d-flex align-items-center justify-content-center mt-4">
+                                <!-- Button Code Starts -->
+                                <!-- <div class="pe_signin_button" data-client-id="CLIENT_ID">
+                                    <script src="https://www.phone.email/sign_in_button_v1.js" async></script>
+                                </div>
+                                <script>
+                                    function phoneEmailListener(userObj) {
+                                        var user_json_url = userObj.user_json_url;
+                                        var user_country_code = userObj.user_country_code;
+                                        var user_phone_number = userObj.user_phone_number;
+                                        alert('SUCCESS !!\nYour phone number ' + user_country_code + ' ' + user_phone_number + ' has been authenticated.');
+                                        // You can submit your form here or redirect user to post login dashboard page
+                                        // Send user_json_url to your backend to retrieve user info (i.e. country code and phone number) from this URL.
+                                    }
+                                </script> -->
+                                <!-- Button Code Ends -->
+                            </div>
+
+                        </div>
+
+                    </div> <!-- Col 6 Ends-->
+                </div>
+            </div> <!--Card Ends-->
+
+
+        </div>
+    </main>
+
+</body>
+
+</html>

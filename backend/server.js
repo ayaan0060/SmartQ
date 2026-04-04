@@ -9,6 +9,55 @@ const { errorHandler } = require('./middleware/errorMiddleware');
 
 dotenv.config();
 
+// ── Doctor Availability Scheduler ──────────────────────────────────
+const startDoctorScheduler = () => {
+  const Doctor = require('./models/Doctor');
+  const Hospital = require('./models/Hospital');
+  const DAYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+
+  const checkDoctors = async () => {
+    const now = new Date();
+    const dayName = DAYS[now.getDay()];
+    const currentTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+    const doctors = await Doctor.find({ isAvailable: true });
+    for (const doc of doctors) {
+      let shouldMarkUnavailable = false;
+      let reason = '';
+
+      // Get hospital settings for inactivity threshold
+      const hospital = await Hospital.findById(doc.hospitalId).select('settings').lean();
+      const inactivityMinutes = hospital?.settings?.doctorInactivityMinutes || 30;
+      const inactivityCutoff = new Date(now - inactivityMinutes * 60 * 1000);
+
+      // 1. Shift ended
+      const todaySchedule = doc.schedule?.[dayName];
+      if (todaySchedule?.available && todaySchedule?.end && currentTime >= todaySchedule.end) {
+        shouldMarkUnavailable = true;
+        reason = 'shift ended';
+      }
+      if (todaySchedule && !todaySchedule.available) {
+        shouldMarkUnavailable = true;
+        reason = 'not a working day';
+      }
+
+      // 2. Inactivity
+      if (!shouldMarkUnavailable && doc.lastActivity && doc.lastActivity < inactivityCutoff) {
+        shouldMarkUnavailable = true;
+        reason = `inactive for ${inactivityMinutes} minutes`;
+      }
+
+      if (shouldMarkUnavailable) {
+        await Doctor.findByIdAndUpdate(doc._id, { isAvailable: false });
+        console.log(`[Scheduler] Dr. ${doc.name} marked unavailable — ${reason}`);
+      }
+    }
+  };
+
+  setInterval(checkDoctors, 60 * 1000);
+  console.log('⏰ Doctor availability scheduler started');
+};
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -21,7 +70,7 @@ app.locals.io = io;
 
 // ── Middleware ───────────────────────────────────────────────
 app.use(cors({
-  origin: (origin, cb) => cb(null, true),
+  origin: process.env.CLIENT_URL || '*',
   credentials: true,
 }));
 app.use(express.json({ 
@@ -59,6 +108,7 @@ app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/ambulances', require('./routes/ambulanceRoutes'));
 app.use('/api/staff', require('./routes/staffRoutes'));
 app.use('/api/emergency', require('./routes/emergencyRoutes'));
+app.use('/api/appointments', require('./routes/appointmentRoutes'));
 
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'SmartQ API is running', ts: new Date() });
@@ -187,7 +237,10 @@ io.on('connection', (socket) => {
 // ── Database ─────────────────────────────────────────────────
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/smartqueue';
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log('✅ MongoDB connected'))
+  .then(() => {
+    console.log('✅ MongoDB connected');
+    startDoctorScheduler();
+  })
   .catch(err => { console.error('❌ MongoDB Error:', err); process.exit(1); });
 
 // ── Start Server ─────────────────────────────────────────────

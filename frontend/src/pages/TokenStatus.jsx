@@ -164,7 +164,6 @@ const TokenStatus = () => {
         subtitle={`Live monitoring for your queue position at ${token.hospitalId?.name || 'the clinic'}.`}
         icon={Ticket}
         iconClassName={isCompleted ? 'bg-success text-white' : 'bg-primary text-white'}
-        titleClassName="text-white"
       />
 
       <motion.div 
@@ -202,13 +201,13 @@ const TokenStatus = () => {
                     {token.tokenNumber}
                   </h2>
                   <div className="flex items-center justify-center gap-3">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Your Private Access Key</p>
+                    <p className="text-sm sm:text-base font-black text-slate-300 uppercase tracking-widest">Your Private Access Key</p>
                     <button
                       onClick={handleCopy}
                       title="Copy token"
-                      className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/10"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/10"
                     >
-                      {copied ? <Check size={11} className="text-green-400" /> : <Copy size={11} />}
+                      {copied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
                       {copied ? 'Copied!' : 'Copy'}
                     </button>
                   </div>

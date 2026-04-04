@@ -18,7 +18,7 @@ const authorize = (...roles) => {
 
 // Auto-inject hospitalId filter for hospital-admin (tenant isolation)
 const tenantFilter = (req, res, next) => {
-  if (['hospital-admin', 'staff', 'receptionist'].includes(req.user?.role)) {
+  if (['hospital-admin', 'staff', 'receptionist', 'doctor'].includes(req.user?.role)) {
     req.hospitalFilter = { hospitalId: req.user.hospitalId };
   } else if (req.user?.role === 'super-admin') {
     req.hospitalFilter = {};

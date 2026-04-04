@@ -8,7 +8,13 @@ const emitQueueUpdate = (req, hospitalId, event, data) => {
   if (io) io.to(hospitalId.toString()).emit(event, data);
 };
 
-// Auto-expire tokens from previous days still in waiting/in-progress
+// ── Constants ─────────────────────────────────────────────────────────────────
+const DEFAULT_WAIT = 30; // minutes — used when not enough real data
+const MIN_SAMPLES  = 3;  // minimum completed tokens needed for real avg
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+// Auto-expire tokens from previous days
 const autoExpireStaleTokens = async (hospitalId) => {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -18,104 +24,153 @@ const autoExpireStaleTokens = async (hospitalId) => {
   );
 };
 
-// Call next waiting token automatically
-const callNextToken = async (req, hospitalId, serviceId) => {
+// Get real avg consultation time — falls back to DEFAULT_WAIT if not enough data
+const getRealAvgTime = async (serviceId, serviceDefaultAvg) => {
+  const completed = await Token.find({
+    serviceId,
+    status: 'completed',
+    waitTime: { $gt: 0 },
+  }).sort({ completedAt: -1 }).limit(20).select('waitTime').lean();
+
+  if (completed.length >= MIN_SAMPLES) {
+    return Math.round(completed.reduce((s, t) => s + t.waitTime, 0) / completed.length);
+  }
+  // Not enough real data — use service default or global default
+  return serviceDefaultAvg || DEFAULT_WAIT;
+};
+
+// Priority sort: emergency first, then high, then normal, then by time
+const PRIORITY_ORDER = { emergency: 3, high: 2, normal: 1 };
+const sortByPriority = (tokens) =>
+  [...tokens].sort((a, b) =>
+    (PRIORITY_ORDER[b.priority] || 1) - (PRIORITY_ORDER[a.priority] || 1) ||
+    new Date(a.createdAt) - new Date(b.createdAt)
+  );
+
+// Calculate safety level based on queue state
+const calcSafetyLevel = (tokens) => {
+  const waiting        = tokens.filter(t => t.status === 'waiting');
+  const emergencyCount = waiting.filter(t => t.priority === 'emergency').length;
+  const highCount      = waiting.filter(t => t.priority === 'high').length;
+  const totalWaiting   = waiting.length;
+
+  if (emergencyCount > 0)  return { level: 'Critical', color: '#EF4444', bg: 'rgba(239,68,68,0.12)',   desc: `${emergencyCount} emergency case${emergencyCount > 1 ? 's' : ''} in queue` };
+  if (highCount > 2)       return { level: 'High',     color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', desc: `${highCount} high priority patients` };
+  if (totalWaiting > 10)   return { level: 'Busy',     color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', desc: `${totalWaiting} patients waiting` };
+  if (totalWaiting > 0)    return { level: 'Moderate', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)', desc: `${totalWaiting} patients in queue` };
+  return                          { level: 'Clear',    color: '#10B981', bg: 'rgba(16,185,129,0.12)', desc: 'No patients waiting' };
+};
+
+// ── Call next waiting token automatically ─────────────────────────────────────
+const callNextToken = async (req, hospitalId, serviceId, doctorId = null) => {
   const io = req.app.locals.io;
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
-  const priorityOrder = { emergency: 3, high: 2, normal: 1 };
 
-  const waiting = await Token.find({
-    hospitalId, serviceId, status: 'waiting',
-    createdAt: { $gte: todayStart },
-  }).populate('userId', 'name').populate('patientId', 'name').populate('serviceId', 'name').sort({ createdAt: 1 });
+  const filter = { hospitalId, status: 'waiting', createdAt: { $gte: todayStart } };
+  if (doctorId) filter.doctorId = doctorId;
+  else filter.serviceId = serviceId;
 
+  const waiting = await Token.find(filter).lean();
   if (!waiting.length) return null;
-  waiting.sort((a, b) => (priorityOrder[b.priority] || 1) - (priorityOrder[a.priority] || 1));
 
-  const next = waiting[0];
-  next.status = 'in-progress';
+  const sorted = sortByPriority(waiting);
+  const next = await Token.findById(sorted[0]._id);
+  next.status   = 'in-progress';
   next.calledAt = new Date();
   await next.save();
 
+  const populated = await Token.findById(next._id)
+    .populate('userId', 'name phone')
+    .populate('patientId', 'name phone')
+    .populate('serviceId', 'name')
+    .lean();
+
   if (io) {
-    io.to(hospitalId.toString()).emit('queue:update', next);
+    io.to(hospitalId.toString()).emit('queue:update', populated);
     io.to(`token:${next._id}`).emit('token:called', {
       tokenNumber: next.tokenNumber,
       message: 'Your turn has come! Please proceed to the counter.',
     });
   }
-  return next;
+  return populated;
 };
 
 // ── GET /api/queue ────────────────────────────────────────────────────────────
-// Active queue (waiting + in-progress) for a hospital/service.
-// Supports optional ?date=YYYY-MM-DD to scope to a specific day.
 const getQueue = asyncHandler(async (req, res) => {
   const { serviceId, date } = req.query;
   const hospitalId = req.hospitalFilter?.hospitalId;
 
-  // Auto-expire stale tokens from previous days
   if (hospitalId) await autoExpireStaleTokens(hospitalId);
 
-  const filter = {
-    ...req.hospitalFilter,
-    status: { $in: ['waiting', 'in-progress'] },
-  };
-
+  const filter = { ...req.hospitalFilter, status: { $in: ['waiting', 'in-progress'] } };
   if (serviceId) filter.serviceId = serviceId;
 
-  // Optional date scope — defaults to today when not supplied
   if (date) {
-    const start = new Date(date);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(date);
-    end.setHours(23, 59, 59, 999);
+    const start = new Date(date); start.setHours(0, 0, 0, 0);
+    const end   = new Date(date); end.setHours(23, 59, 59, 999);
     filter.createdAt = { $gte: start, $lte: end };
   } else {
-    // Always scope active queue to today so stale tokens don't bleed through
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
     filter.createdAt = { $gte: todayStart };
   }
 
-  const tokens = await Token.find(filter)
+  const rawTokens = await Token.find(filter)
     .populate('userId',    'name phone')
     .populate('patientId', 'name phone bloodGroup')
     .populate('doctorId',  'name specialization')
-    .populate('serviceId', 'name')
-    .sort({ priority: -1, createdAt: 1 })
+    .populate('serviceId', 'name avgTime')
     .lean();
 
-  return success(res, { tokens, count: tokens.length });
+  // Sort by priority then time
+  const tokens = sortByPriority(rawTokens);
+
+  // Calculate real-time estimated wait for each waiting token
+  const waiting    = tokens.filter(t => t.status === 'waiting');
+  const inProgress = tokens.find(t => t.status === 'in-progress');
+
+  // Cache avg times per service to avoid repeated DB calls
+  const avgCache = {};
+  const getAvg = async (svcId, svcDefaultAvg) => {
+    const key = svcId?.toString();
+    if (!key) return DEFAULT_WAIT;
+    if (avgCache[key] !== undefined) return avgCache[key];
+    avgCache[key] = await getRealAvgTime(svcId, svcDefaultAvg);
+    return avgCache[key];
+  };
+
+  // Cumulative wait: if someone is in-progress, add remaining time (5 min estimate)
+  let cumulativeWait = inProgress ? 5 : 0;
+  for (const token of waiting) {
+    const avg = await getAvg(
+      token.serviceId?._id || token.serviceId,
+      token.serviceId?.avgTime
+    );
+    token.estimatedTime = cumulativeWait + avg;
+    cumulativeWait += avg;
+  }
+
+  // Calculate safety level and overall avg wait
+  const safety = calcSafetyLevel(tokens);
+  const overallAvgWait = waiting.length > 0
+    ? Math.round(waiting.reduce((s, t) => s + t.estimatedTime, 0) / waiting.length)
+    : 0;
+
+  return success(res, { tokens, count: tokens.length, safety, overallAvgWait });
 });
 
 // ── GET /api/queue/history ────────────────────────────────────────────────────
-// All terminal tokens (completed / skipped / cancelled) for a hospital.
-//
-// Query params:
-//   date       — YYYY-MM-DD  filter by booking date (createdAt)
-//   patientId  — ObjectId    filter to one patient (Patient._id)
-//   userId     — ObjectId    filter to one user    (User._id)
-//   limit      — number      default 200
 const getHistory = asyncHandler(async (req, res) => {
   const { date, patientId, userId, limit = 200 } = req.query;
 
-  const filter = {
-    ...req.hospitalFilter,
-    status: { $in: ['completed', 'skipped', 'cancelled'] },
-  };
+  const filter = { ...req.hospitalFilter, status: { $in: ['completed', 'skipped', 'cancelled'] } };
 
-  // Date filter — scopes to a single calendar day
   if (date) {
-    const start = new Date(date);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(date);
-    end.setHours(23, 59, 59, 999);
+    const start = new Date(date); start.setHours(0, 0, 0, 0);
+    const end   = new Date(date); end.setHours(23, 59, 59, 999);
     filter.createdAt = { $gte: start, $lte: end };
   }
 
-  // Patient-scoped history (for VisitHistoryDrawer)
   if (patientId) filter.patientId = patientId;
   if (userId)    filter.userId    = userId;
 
@@ -132,20 +187,14 @@ const getHistory = asyncHandler(async (req, res) => {
 });
 
 // ── GET /api/queue/patient/:patientId ─────────────────────────────────────────
-// All tokens (all statuses) for a single patient — used by VisitHistoryDrawer.
-// Matches on patientId OR userId so both registration paths are covered.
 const getPatientVisits = asyncHandler(async (req, res) => {
   const { patientId } = req.params;
-  const { userId }    = req.query; // optional secondary lookup key
+  const { userId }    = req.query;
 
-  // Build an $or so we catch tokens linked by either field
   const orClauses = [{ patientId }];
   if (userId) orClauses.push({ userId });
 
-  const filter = {
-    ...req.hospitalFilter,
-    $or: orClauses,
-  };
+  const filter = { ...req.hospitalFilter, $or: orClauses };
 
   const tokens = await Token.find(filter)
     .populate('userId',    'name phone')
@@ -170,20 +219,10 @@ const addToken = asyncHandler(async (req, res) => {
   const startOfDay = new Date(today);
   startOfDay.setHours(0, 0, 0, 0);
 
-  const count = await Token.countDocuments({
-    hospitalId,
-    createdAt: { $gte: startOfDay },
-  });
-
+  const count = await Token.countDocuments({ hospitalId, createdAt: { $gte: startOfDay } });
   const tokenNumber = `${datePrefix}-${String(count + 1).padStart(3, '0')}`;
 
-  const token = await Token.create({
-    ...req.body,
-    hospitalId,
-    tokenNumber,
-    position: count + 1,
-  });
-
+  const token = await Token.create({ ...req.body, hospitalId, tokenNumber, position: count + 1 });
   const populated = await token.populate('serviceId', 'name');
 
   emitQueueUpdate(req, hospitalId, 'queue:add', populated);
@@ -212,13 +251,16 @@ const updateToken = asyncHandler(async (req, res) => {
 
   if (!token) return error(res, 'Token not found', 404);
 
+  if (req.user.role === 'doctor') {
+    const Doctor = require('../models/Doctor');
+    await Doctor.findOneAndUpdate({ userId: req.user._id }, { lastActivity: new Date() });
+  }
+
   const event = priority ? 'queue:priority-change' : 'queue:update';
   emitQueueUpdate(req, token.hospitalId, event, token);
 
-  // If token is completed or skipped — notify patient + auto-call next
   const io = req.app.locals.io;
   if (['completed', 'skipped'].includes(status)) {
-    // Notify the completed patient
     if (io) {
       io.to(`token:${token._id}`).emit('token:done', {
         status,
@@ -227,11 +269,9 @@ const updateToken = asyncHandler(async (req, res) => {
           : 'Your token was skipped. Please check with the reception.',
       });
     }
-    // Auto-call next waiting patient
-    await callNextToken(req, token.hospitalId, token.serviceId);
+    await callNextToken(req, token.hospitalId, token.serviceId, token.doctorId || null);
   }
 
-  // If called to in-progress — notify that specific patient
   if (status === 'in-progress' && io) {
     io.to(`token:${token._id}`).emit('token:called', {
       tokenNumber: token.tokenNumber,
@@ -245,15 +285,108 @@ const updateToken = asyncHandler(async (req, res) => {
 // ── DELETE /api/queue/:id ─────────────────────────────────────────────────────
 const removeToken = asyncHandler(async (req, res) => {
   const filter = { _id: req.params.id, ...(req.hospitalFilter || {}) };
-  const token  = await Token.findOneAndUpdate(
-    filter,
-    { status: 'cancelled' },
-    { new: true }
-  );
+  const token  = await Token.findOneAndUpdate(filter, { status: 'cancelled' }, { new: true });
   if (!token) return error(res, 'Token not found', 404);
 
   emitQueueUpdate(req, token.hospitalId, 'queue:remove', { _id: token._id });
   return success(res, {}, 200, 'Token removed from queue');
 });
 
-module.exports = { getQueue, getHistory, getPatientVisits, addToken, updateToken, removeToken };
+// ── GET /api/queue/display/:hospitalId ───────────────────────────────────────
+const getDisplayQueue = asyncHandler(async (req, res) => {
+  const { hospitalId } = req.params;
+  const Hospital = require('../models/Hospital');
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const [rawTokens, completedCount, hospital] = await Promise.all([
+    Token.find({ hospitalId, status: { $in: ['waiting', 'in-progress'] }, createdAt: { $gte: todayStart } })
+      .populate('patientId', 'name')
+      .populate('userId',    'name')
+      .populate('serviceId', 'name')
+      .lean(),
+    Token.countDocuments({ hospitalId, status: 'completed', createdAt: { $gte: todayStart } }),
+    Hospital.findById(hospitalId).select('name').lean(),
+  ]);
+
+  const tokens = sortByPriority(rawTokens);
+  return success(res, { tokens, completedCount, hospitalName: hospital?.name || '' });
+});
+
+// ── GET /api/queue/doctor ─────────────────────────────────────────────────────
+const getDoctorQueue = asyncHandler(async (req, res) => {
+  const Doctor = require('../models/Doctor');
+  const doctor = await Doctor.findOneAndUpdate(
+    { userId: req.user._id },
+    { lastActivity: new Date() },
+    { new: true }
+  ).lean();
+  if (!doctor) return error(res, 'Doctor profile not found', 404);
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const [rawActive, history] = await Promise.all([
+    Token.find({ doctorId: doctor._id, hospitalId: req.user.hospitalId, status: { $in: ['waiting', 'in-progress'] }, createdAt: { $gte: todayStart } })
+      .populate('patientId', 'name phone bloodGroup gender dateOfBirth')
+      .populate('userId',    'name phone')
+      .populate('serviceId', 'name avgTime')
+      .lean(),
+    Token.find({ doctorId: doctor._id, hospitalId: req.user.hospitalId, status: { $in: ['completed', 'skipped'] }, createdAt: { $gte: todayStart } })
+      .populate('patientId', 'name phone')
+      .populate('userId',    'name phone')
+      .populate('serviceId', 'name')
+      .sort({ completedAt: -1 })
+      .lean(),
+  ]);
+
+  // Sort active by priority and calculate estimated wait
+  const active = sortByPriority(rawActive);
+  const waiting = active.filter(t => t.status === 'waiting');
+  const inProgress = active.find(t => t.status === 'in-progress');
+
+  const avgCache = {};
+  let cumulativeWait = inProgress ? 5 : 0;
+  for (const token of waiting) {
+    const key = token.serviceId?._id?.toString() || token.serviceId?.toString();
+    if (!avgCache[key]) avgCache[key] = await getRealAvgTime(token.serviceId?._id || token.serviceId, token.serviceId?.avgTime);
+    token.estimatedTime = cumulativeWait + avgCache[key];
+    cumulativeWait += avgCache[key];
+  }
+
+  return success(res, { doctor, active, history, completedCount: history.length });
+});
+
+// ── GET /api/queue/stats/:hospitalId — public stats for dashboard ─────────────
+const getHospitalQueueStats = asyncHandler(async (req, res) => {
+  const { hospitalId } = req.params;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const tokens = await Token.find({
+    hospitalId,
+    status: { $in: ['waiting', 'in-progress'] },
+    createdAt: { $gte: todayStart },
+  }).select('status priority estimatedTime serviceId').lean();
+
+  const safety = calcSafetyLevel(tokens);
+  const waiting = tokens.filter(t => t.status === 'waiting');
+
+  // Calculate avg wait using real data
+  const avgCache = {};
+  let totalWait = 0;
+  for (const t of waiting) {
+    const key = t.serviceId?.toString();
+    if (key && !avgCache[key]) avgCache[key] = await getRealAvgTime(t.serviceId, DEFAULT_WAIT);
+    totalWait += avgCache[key] || DEFAULT_WAIT;
+  }
+  const avgWait = waiting.length > 0 ? Math.round(totalWait / waiting.length) : 0;
+
+  return success(res, { safety, avgWait, waitingCount: waiting.length });
+});
+
+module.exports = {
+  getQueue, getHistory, getPatientVisits, addToken, updateToken,
+  removeToken, getDisplayQueue, getDoctorQueue, getHospitalQueueStats,
+};
