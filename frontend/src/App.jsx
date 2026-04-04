@@ -13,37 +13,53 @@ import ErrorBoundary from './components/ErrorBoundary';
 // Layouts
 import AdminLayout from './layouts/AdminLayout';
 
+// ── Retry wrapper for lazy imports (fixes stale chunk errors after deploy) ──
+const lazyWithRetry = (importFn) =>
+  lazy(() =>
+    importFn().catch(() => {
+      // If a chunk fails to load (stale cache after deploy), reload once
+      const hasReloaded = sessionStorage.getItem('smartq-chunk-retry');
+      if (!hasReloaded) {
+        sessionStorage.setItem('smartq-chunk-retry', '1');
+        window.location.reload();
+        return new Promise(() => {}); // never resolves — page is reloading
+      }
+      sessionStorage.removeItem('smartq-chunk-retry');
+      return importFn(); // let it throw naturally on second failure
+    })
+  );
+
 // Lazy-loaded Public Pages
-const Home             = lazy(() => import('./pages/Home'));
-const Login            = lazy(() => import('./pages/Login'));
-const Register         = lazy(() => import('./pages/Register'));
-const HospitalRegister = lazy(() => import('./pages/HospitalRegister'));
-const ForHospitals     = lazy(() => import('./pages/ForHospitals'));
-const HospitalSelection = lazy(() => import('./pages/HospitalSelection'));
-const Dashboard        = lazy(() => import('./pages/Dashboard'));
-const TokenStatus      = lazy(() => import('./pages/TokenStatus'));
-const TokenHistory     = lazy(() => import('./pages/TokenHistory'));
-const PaymentHistory   = lazy(() => import('./pages/PaymentHistory'));
-const EmergencyTracking = lazy(() => import('./pages/EmergencyTrackingPage'));
-const AmbulancePage     = lazy(() => import('./pages/patient/AmbulancePage'));
-const NotFound         = lazy(() => import('./pages/NotFound'));
+const Home             = lazyWithRetry(() => import('./pages/Home'));
+const Login            = lazyWithRetry(() => import('./pages/Login'));
+const Register         = lazyWithRetry(() => import('./pages/Register'));
+const HospitalRegister = lazyWithRetry(() => import('./pages/HospitalRegister'));
+const ForHospitals     = lazyWithRetry(() => import('./pages/ForHospitals'));
+const HospitalSelection = lazyWithRetry(() => import('./pages/HospitalSelection'));
+const Dashboard        = lazyWithRetry(() => import('./pages/Dashboard'));
+const TokenStatus      = lazyWithRetry(() => import('./pages/TokenStatus'));
+const TokenHistory     = lazyWithRetry(() => import('./pages/TokenHistory'));
+const PaymentHistory   = lazyWithRetry(() => import('./pages/PaymentHistory'));
+const EmergencyTracking = lazyWithRetry(() => import('./pages/EmergencyTrackingPage'));
+const AmbulancePage     = lazyWithRetry(() => import('./pages/patient/AmbulancePage'));
+const NotFound         = lazyWithRetry(() => import('./pages/NotFound'));
 
 // Lazy-loaded Admin Pages
-const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
-const HospitalsPage      = lazy(() => import('./pages/admin/HospitalsPage'));
-const DepartmentsPage    = lazy(() => import('./pages/admin/DepartmentsPage'));
-const StaffPage          = lazy(() => import('./pages/admin/StaffPage'));
-const PatientsPage       = lazy(() => import('./pages/admin/PatientsPage'));
-const QueuePage          = lazy(() => import('./pages/admin/QueuePage'));
-const AnalyticsPage      = lazy(() => import('./pages/admin/AnalyticsPage'));
-const SettingsPage       = lazy(() => import('./pages/admin/SettingsPage'));
-const HospitalDetailPage = lazy(() => import('./pages/admin/HospitalDetailPage'));
-const AmbulancesPage     = lazy(() => import('./pages/admin/AmbulancesPage'));
-const ReceptionistPage   = lazy(() => import('./pages/ReceptionistPage'));
-const DisplayBoard       = lazy(() => import('./pages/DisplayBoard'));
-const DoctorPortal       = lazy(() => import('./pages/DoctorPortal'));
-const AppointmentBooking = lazy(() => import('./pages/AppointmentBooking'));
-const MyAppointments     = lazy(() => import('./pages/MyAppointments'));
+const AdminDashboardPage = lazyWithRetry(() => import('./pages/admin/AdminDashboardPage'));
+const HospitalsPage      = lazyWithRetry(() => import('./pages/admin/HospitalsPage'));
+const DepartmentsPage    = lazyWithRetry(() => import('./pages/admin/DepartmentsPage'));
+const StaffPage          = lazyWithRetry(() => import('./pages/admin/StaffPage'));
+const PatientsPage       = lazyWithRetry(() => import('./pages/admin/PatientsPage'));
+const QueuePage          = lazyWithRetry(() => import('./pages/admin/QueuePage'));
+const AnalyticsPage      = lazyWithRetry(() => import('./pages/admin/AnalyticsPage'));
+const SettingsPage       = lazyWithRetry(() => import('./pages/admin/SettingsPage'));
+const HospitalDetailPage = lazyWithRetry(() => import('./pages/admin/HospitalDetailPage'));
+const AmbulancesPage     = lazyWithRetry(() => import('./pages/admin/AmbulancesPage'));
+const ReceptionistPage   = lazyWithRetry(() => import('./pages/ReceptionistPage'));
+const DisplayBoard       = lazyWithRetry(() => import('./pages/DisplayBoard'));
+const DoctorPortal       = lazyWithRetry(() => import('./pages/DoctorPortal'));
+const AppointmentBooking = lazyWithRetry(() => import('./pages/AppointmentBooking'));
+const MyAppointments     = lazyWithRetry(() => import('./pages/MyAppointments'));
 
 const LoadingFallback = () => (
   <div className="flex min-h-screen items-center justify-center" style={{ background: '#0B0F19' }}>
