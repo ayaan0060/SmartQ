@@ -75,7 +75,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-surface text-on-surface" style={{ backgroundImage: 'radial-gradient(#e4bdbb 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }}>
+    <div className="min-h-screen bg-surface text-on-surface" style={{ backgroundImage: 'radial-gradient(var(--color-outline-variant) 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }}>
       <main className="min-h-screen flex items-center justify-center p-6">
         <div className="w-full max-w-[1100px] grid grid-cols-1 md:grid-cols-12 gap-0 overflow-hidden bg-surface-container-lowest rounded-2xl shadow-[0px_20px_40px_rgba(26,28,28,0.06)] ring-1 ring-outline-variant/10">
 
@@ -115,8 +115,7 @@ export default function Login() {
                 {MODES.map(({ id, icon: Icon, label }) => (
                   <button key={id} type="button"
                     onClick={() => { setMode(id); setErrors({}); }}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-all"
-                    style={{ background: mode === id ? '#ffffff' : 'transparent', color: mode === id ? '#a5001b' : '#5f5e5e', boxShadow: mode === id ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-all ${mode === id ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-secondary'}`}
                   >
                     <Icon size={14} />{label}
                   </button>

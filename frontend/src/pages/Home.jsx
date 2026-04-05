@@ -3,10 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowRight, ShieldCheck, Zap, Heart, Brain,
-  Wifi, Lock, LogOut, QrCode,
+  Wifi, Lock, LogOut, QrCode, Moon, Sun,
 } from 'lucide-react';
 import { useAuthStore } from '../features/auth/useAuthStore';
 import { AuthService } from '../features/auth/AuthService';
+import { useTheme } from '../hooks/useTheme';
 import Footer from '../components/Footer';
 
 // TODO: Replace with real API data
@@ -15,24 +16,33 @@ const MOCK_STATS = { responseImprovement: '-42%', nodesMonitored: '1,240', uptim
 export default function Home() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
+  const { theme, toggle } = useTheme();
 
   const handleLogout = () => { AuthService.logout(); navigate('/login'); };
 
   return (
     <div className="min-h-screen bg-background text-on-surface">
       {/* TopNavBar */}
-      <nav className="fixed top-0 w-full z-50 border-b border-zinc-200/10 glass-nav shadow-sm flex justify-between items-center px-6 py-3">
+      <nav className="fixed top-0 w-full z-50 border-b border-zinc-200/10 dark:border-zinc-700/30 glass-nav shadow-sm flex justify-between items-center px-6 py-3">
         <div className="flex items-center gap-8">
-          <span className="text-2xl font-black italic text-red-700 tracking-tight">SmartQ</span>
+          <span className="text-2xl font-black italic text-red-700 dark:text-red-400 tracking-tight">SmartQ</span>
           <div className="hidden md:flex gap-6 items-center">
-            <Link to="/" className="text-red-700 font-bold border-b-2 border-red-700 text-sm">Home</Link>
-            <Link to="/for-hospitals" className="text-zinc-600 hover:bg-zinc-100 transition-colors px-3 py-1 rounded-md text-sm">For Hospitals</Link>
+            <Link to="/" className="text-red-700 dark:text-red-400 font-bold border-b-2 border-red-700 dark:border-red-400 text-sm">Home</Link>
+            <Link to="/for-hospitals" className="text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors px-3 py-1 rounded-md text-sm">For Hospitals</Link>
             {isAuthenticated && (
-              <Link to="/dashboard" className="text-zinc-600 hover:bg-zinc-100 transition-colors px-3 py-1 rounded-md text-sm">Dashboard</Link>
+              <Link to="/dashboard" className="text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors px-3 py-1 rounded-md text-sm">Dashboard</Link>
             )}
           </div>
         </div>
         <div className="flex items-center gap-4">
+          {/* Dark mode toggle */}
+          <button
+            onClick={toggle}
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors"
+          >
+            {theme === 'dark' ? <Sun size={18} className="text-yellow-400" /> : <Moon size={18} className="text-on-surface-variant" />}
+          </button>
+
           {isAuthenticated ? (
             <>
               <span className="text-sm font-semibold text-secondary hidden sm:block">{user?.name}</span>
@@ -97,7 +107,7 @@ export default function Home() {
 
           <div className="lg:col-span-5 relative">
             <div className="rounded-2xl overflow-hidden shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-700">
-              <div className="w-full h-[500px] bg-gradient-to-br from-primary-container to-primary flex items-center justify-center">
+              <div className="w-full h-[500px] bg-linear-to-br from-primary-container to-primary flex items-center justify-center">
                 <div className="text-center text-on-primary">
                   <Heart size={80} className="mx-auto mb-4 opacity-80" />
                   <p className="text-2xl font-black">SmartQ</p>
@@ -105,7 +115,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <div className="absolute -bottom-10 -left-10 bg-surface-container-lowest p-6 rounded-2xl shadow-xl max-w-xs border border-zinc-100">
+            <div className="absolute -bottom-10 -left-10 bg-surface-container-lowest p-6 rounded-2xl shadow-xl max-w-xs border border-zinc-100 dark:border-zinc-700">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 bg-primary-container rounded-full flex items-center justify-center">
                   <Zap size={24} className="text-on-primary" />
@@ -115,7 +125,7 @@ export default function Home() {
                   <p className="text-2xl font-black text-primary">{MOCK_STATS.responseImprovement} Improvement</p>
                 </div>
               </div>
-              <p className="text-sm text-zinc-500">SmartQ automated triage protocols prioritize life-critical cases in under 12 seconds.</p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">SmartQ automated triage protocols prioritize life-critical cases in under 12 seconds.</p>
             </div>
           </div>
         </div>
@@ -156,7 +166,7 @@ export default function Home() {
                 <h3 className="text-3xl font-extrabold text-on-surface mb-4">Neural Data Mesh</h3>
                 <p className="text-secondary leading-relaxed">SmartQ utilizes a proprietary decentralized data mesh to ensure {MOCK_STATS.uptime} uptime for hospital-wide communication, even during network degradation.</p>
               </div>
-              <div className="mt-8 rounded-xl overflow-hidden bg-gradient-to-br from-primary/10 to-tertiary/10 h-48 flex items-center justify-center">
+              <div className="mt-8 rounded-xl overflow-hidden bg-linear-to-br from-primary/10 to-tertiary/10 h-48 flex items-center justify-center">
                 <Wifi size={64} className="text-primary opacity-30" />
               </div>
             </motion.div>
@@ -203,7 +213,7 @@ export default function Home() {
                       <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Active Patient Vitals</h4>
                       <h5 className="text-2xl font-black text-on-surface">Patient #002-XC</h5>
                     </div>
-                    <span className="px-3 py-1 rounded-full bg-red-50 text-red-700 text-xs font-bold animate-pulse">URGENT</span>
+                    <span className="px-3 py-1 rounded-full bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-xs font-bold animate-pulse">URGENT</span>
                   </div>
                   <div className="grid grid-cols-2 gap-8">
                     <div>
@@ -221,8 +231,8 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-                  <div className="mt-8 pt-8 border-t border-zinc-100">
-                    <div className="w-full h-24 bg-zinc-50 rounded-lg flex items-center justify-center overflow-hidden">
+                  <div className="mt-8 pt-8 border-t border-zinc-100 dark:border-zinc-700">
+                    <div className="w-full h-24 bg-zinc-50 dark:bg-zinc-800 rounded-lg flex items-center justify-center overflow-hidden">
                       <svg className="w-full h-full stroke-primary stroke-2 fill-none" viewBox="0 0 100 20">
                         <path d="M0,10 L10,10 L12,5 L14,15 L16,10 L30,10 L32,2 L34,18 L36,10 L50,10 L52,8 L54,12 L56,10 L70,10 L72,0 L74,20 L76,10 L90,10 L100,10" />
                       </svg>
@@ -243,7 +253,7 @@ export default function Home() {
                   { icon: ShieldCheck, title: 'Physician-Validated Logic', desc: 'Triage algorithms are built on peer-reviewed protocols and validated by senior ER faculty.' },
                 ].map(({ icon: Icon, title, desc }) => (
                   <div key={title} className="flex gap-6">
-                    <div className="flex-shrink-0 w-12 h-12 bg-surface-container-highest rounded-2xl flex items-center justify-center">
+                    <div className="shrink-0 w-12 h-12 bg-surface-container-highest rounded-2xl flex items-center justify-center">
                       <Icon size={24} className="text-primary" />
                     </div>
                     <div>
@@ -282,7 +292,7 @@ export default function Home() {
             </div>
             <div className="relative">
               <div className="bg-primary/20 absolute -inset-20 blur-[100px] rounded-full" />
-              <div className="relative z-10 w-full max-w-sm mx-auto rounded-[3rem] shadow-2xl border-[8px] border-zinc-800 bg-gradient-to-br from-primary to-primary-container h-[400px] flex items-center justify-center">
+              <div className="relative z-10 w-full max-w-sm mx-auto rounded-[3rem] shadow-2xl border-8 border-zinc-800 bg-linear-to-br from-primary to-primary-container h-[400px] flex items-center justify-center">
                 <div className="text-center text-on-primary">
                   <QrCode size={80} className="mx-auto mb-4 opacity-80" />
                   <p className="text-xl font-black">SmartQ Mobile</p>
@@ -299,8 +309,8 @@ export default function Home() {
           <h2 className="text-4xl font-black uppercase tracking-tight text-on-surface mb-4 italic">Command &amp; Control</h2>
           <p className="text-secondary max-w-2xl mx-auto">The administrative dashboard designed for clinical directors who require absolute situational awareness.</p>
         </div>
-        <div className="max-w-5xl mx-auto bg-surface-container-lowest rounded-2xl shadow-2xl overflow-hidden border border-zinc-100">
-          <div className="bg-zinc-50 border-b border-zinc-200 px-6 py-4 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto bg-surface-container-lowest rounded-2xl shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-700">
+          <div className="bg-zinc-50 dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700 px-6 py-4 flex items-center justify-between">
             <div className="flex gap-2">
               <div className="w-3 h-3 rounded-full bg-red-400" />
               <div className="w-3 h-3 rounded-full bg-yellow-400" />

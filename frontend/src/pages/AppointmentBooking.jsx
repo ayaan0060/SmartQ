@@ -478,7 +478,7 @@ export default function AppointmentBooking() {
                 {/* Confirm card */}
                 <div className="lg:col-span-4">
                   <div className="bg-primary text-on-primary rounded-2xl p-8 shadow-2xl relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary-container opacity-50" />
+                    <div className="absolute inset-0 bg-linear-to-br from-primary to-primary-container opacity-50" />
                     <div className="relative z-10">
                       <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-6 opacity-80">
                         Appointment Summary

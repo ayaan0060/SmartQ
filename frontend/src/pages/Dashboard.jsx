@@ -257,7 +257,7 @@ export default function Dashboard() {
                     <Popup>{selectedHospital.name}</Popup>
                   </Marker>
                 </MapContainer>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent pointer-events-none" />
                 <div className="absolute bottom-4 left-6 pointer-events-none">
                   <h4 className="text-white font-black text-lg tracking-tight">Transit Status</h4>
                   <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest">Nearby: {selectedHospital.name}</p>
