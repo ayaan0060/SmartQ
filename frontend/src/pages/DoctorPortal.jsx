@@ -1,74 +1,54 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
-  CheckCircle2, SkipForward, Clock, Users, Zap, LogOut,
-  Activity, Calendar, Phone, Droplets, User, ChevronDown, ChevronUp,
+  CheckCircle2, SkipForward, Clock, Users, AlertTriangle,
+  Activity, LogOut, ChevronDown, ChevronUp, Phone, Droplets,
+  User, Calendar, ArrowRight,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
 import { useAuthStore } from '../features/auth/useAuthStore';
 import { connectSocket, getSocket } from '../services/socket';
+import Sidebar from '../components/Sidebar';
+import Footer from '../components/Footer';
 
 const priorityConfig = {
-  emergency: { label: 'EMERGENCY', color: '#EF4444', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.25)' },
-  high:      { label: 'HIGH',      color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.25)' },
-  normal:    { label: 'NORMAL',    color: '#10B981', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.25)' },
+  emergency: { label: 'EMERGENCY', color: 'text-error', bg: 'bg-error-container' },
+  high:      { label: 'HIGH',      color: 'text-amber-600', bg: 'bg-amber-50' },
+  normal:    { label: 'NORMAL',    color: 'text-green-700', bg: 'bg-green-50' },
 };
 
 function PatientCard({ token }) {
   const [expanded, setExpanded] = useState(false);
   const patient = token.patientId || token.userId;
+  const pCfg = priorityConfig[token.priority] || priorityConfig.normal;
   return (
-    <div className="rounded-xl overflow-hidden" style={{ background: '#0F172A', border: '1px solid #1E293B' }}>
+    <div className="rounded-xl overflow-hidden bg-surface border border-outline-variant/20">
       <div className="flex items-center justify-between px-4 py-3 cursor-pointer" onClick={() => setExpanded(e => !e)}>
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-white"
-            style={{ background: 'linear-gradient(135deg,#2563EB,#7C3AED)' }}>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-on-primary bg-primary">
             {patient?.name?.charAt(0)?.toUpperCase() || '?'}
           </div>
           <div>
-            <p className="text-sm font-semibold text-white">{patient?.name || 'Guest'}</p>
-            <p className="text-xs" style={{ color: '#6B7280' }}>{token.serviceId?.name || 'General'}</p>
+            <p className="text-sm font-semibold text-on-surface">{patient?.name || 'Guest'}</p>
+            <p className="text-xs text-secondary">{token.serviceId?.name || 'General'}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded-full px-2 py-0.5 text-[10px] font-bold"
-            style={{ background: priorityConfig[token.priority]?.bg, color: priorityConfig[token.priority]?.color, border: `1px solid ${priorityConfig[token.priority]?.border}` }}>
-            {priorityConfig[token.priority]?.label}
-          </span>
-          {expanded ? <ChevronUp size={14} style={{ color: '#6B7280' }} /> : <ChevronDown size={14} style={{ color: '#6B7280' }} />}
+          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${pCfg.bg} ${pCfg.color}`}>{pCfg.label}</span>
+          {expanded ? <ChevronUp size={14} className="text-secondary" /> : <ChevronDown size={14} className="text-secondary" />}
         </div>
       </div>
       {expanded && (
-        <div className="px-4 pb-4 space-y-2" style={{ borderTop: '1px solid #1E293B' }}>
+        <div className="px-4 pb-4 space-y-2 border-t border-outline-variant/20">
           <div className="grid grid-cols-2 gap-2 mt-3">
-            {token.patientId?.phone && (
-              <div className="flex items-center gap-2 text-xs" style={{ color: '#94A3B8' }}>
-                <Phone size={12} />{token.patientId.phone}
-              </div>
-            )}
-            {token.patientId?.bloodGroup && (
-              <div className="flex items-center gap-2 text-xs" style={{ color: '#94A3B8' }}>
-                <Droplets size={12} />{token.patientId.bloodGroup}
-              </div>
-            )}
-            {token.patientId?.gender && (
-              <div className="flex items-center gap-2 text-xs" style={{ color: '#94A3B8' }}>
-                <User size={12} />{token.patientId.gender}
-              </div>
-            )}
-            {token.patientId?.dateOfBirth && (
-              <div className="flex items-center gap-2 text-xs" style={{ color: '#94A3B8' }}>
-                <Calendar size={12} />
-                {new Date(token.patientId.dateOfBirth).toLocaleDateString('en-IN')}
-              </div>
-            )}
+            {token.patientId?.phone && <div className="flex items-center gap-2 text-xs text-secondary"><Phone size={12} />{token.patientId.phone}</div>}
+            {token.patientId?.bloodGroup && <div className="flex items-center gap-2 text-xs text-secondary"><Droplets size={12} />{token.patientId.bloodGroup}</div>}
+            {token.patientId?.gender && <div className="flex items-center gap-2 text-xs text-secondary"><User size={12} />{token.patientId.gender}</div>}
+            {token.patientId?.dateOfBirth && <div className="flex items-center gap-2 text-xs text-secondary"><Calendar size={12} />{new Date(token.patientId.dateOfBirth).toLocaleDateString()}</div>}
           </div>
-          {token.notes && (
-            <p className="text-xs mt-2 rounded-lg px-3 py-2" style={{ background: '#1E293B', color: '#94A3B8' }}>
-              📝 {token.notes}
-            </p>
-          )}
+          {token.notes && <p className="text-xs mt-2 rounded-lg px-3 py-2 bg-surface-container text-secondary">📝 {token.notes}</p>}
         </div>
       )}
     </div>
@@ -86,8 +66,8 @@ export default function DoctorPortal() {
   const [loading, setLoading]     = useState(true);
   const [toggling, setToggling]   = useState(false);
 
-  const current  = active.find(t => t.status === 'in-progress');
-  const waiting  = active.filter(t => t.status === 'waiting');
+  const current = active.find(t => t.status === 'in-progress');
+  const waiting = active.filter(t => t.status === 'waiting');
 
   const loadQueue = useCallback(async () => {
     try {
@@ -107,28 +87,16 @@ export default function DoctorPortal() {
     const socket = connectSocket(user?.hospitalId);
     socket.on('connect',    () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
-    socket.on('queue:add',             loadQueue);
-    socket.on('queue:update',          loadQueue);
-    socket.on('queue:priority-change', loadQueue);
-    socket.on('queue:remove',          loadQueue);
+    ['queue:add', 'queue:update', 'queue:priority-change', 'queue:remove'].forEach(e => socket.on(e, loadQueue));
     return () => {
       const s = getSocket();
-      if (s) {
-        s.off('queue:add',             loadQueue);
-        s.off('queue:update',          loadQueue);
-        s.off('queue:priority-change', loadQueue);
-        s.off('queue:remove',          loadQueue);
-      }
+      if (s) ['queue:add', 'queue:update', 'queue:priority-change', 'queue:remove'].forEach(e => s.off(e, loadQueue));
     };
   }, [loadQueue, user?.hospitalId]);
 
   const updateStatus = async (id, status) => {
-    try {
-      await api.patch(`/queue/${id}`, { status });
-      loadQueue();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to update');
-    }
+    try { await api.patch(`/queue/${id}`, { status }); loadQueue(); }
+    catch (err) { toast.error(err?.response?.data?.message || 'Failed to update'); }
   };
 
   const toggleAvailability = async () => {
@@ -138,209 +106,213 @@ export default function DoctorPortal() {
       const r = await api.patch(`/doctors/${doctor._id}/availability`);
       setDoctor(d => ({ ...d, isAvailable: r.data.data.doctor.isAvailable }));
       toast.success(`You are now ${r.data.data.doctor.isAvailable ? 'Available' : 'Unavailable'}`);
-    } catch {
-      toast.error('Failed to update availability');
-    } finally {
-      setToggling(false);
-    }
+    } catch { toast.error('Failed to update availability'); }
+    finally { setToggling(false); }
   };
 
   const handleLogout = async () => {
-    // Mark doctor unavailable on logout
-    if (doctor?._id) {
-      try { await api.patch(`/doctors/${doctor._id}`, { isAvailable: false }); } catch {}
-    }
-    logout();
-    navigate('/login');
+    if (doctor?._id) { try { await api.patch(`/doctors/${doctor._id}`, { isAvailable: false }); } catch {} }
+    logout(); navigate('/login');
   };
 
   if (loading) return (
-    <div className="flex min-h-screen items-center justify-center" style={{ background: '#0B0F19' }}>
-      <div className="h-10 w-10 animate-spin rounded-full border-2 border-t-transparent" style={{ borderColor: '#3B82F6', borderTopColor: 'transparent' }} />
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
     </div>
   );
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#0B0F19' }}>
-
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 shrink-0"
-        style={{ background: '#0D1117', borderBottom: '1px solid #1E293B' }}>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#475569' }}>Doctor Portal</p>
-          <h1 className="text-lg font-bold text-white">{doctor?.name || user?.name}</h1>
-          <p className="text-xs" style={{ color: '#6B7280' }}>{doctor?.specialization} · {hospitalName}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Live indicator */}
-          <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold`}
-            style={{ background: connected ? 'rgba(16,185,129,0.1)' : 'rgba(100,116,139,0.1)', color: connected ? '#10B981' : '#6B7280', border: `1px solid ${connected ? 'rgba(16,185,129,0.2)' : 'rgba(100,116,139,0.2)'}` }}>
-            <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
-            {connected ? 'Live' : 'Offline'}
+    <div className="flex min-h-screen bg-background">
+      <Sidebar />
+      <main className="ml-64 flex-1 flex flex-col">
+        {/* Emergency ticker */}
+        <div className="bg-primary-container text-on-primary-container px-6 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <AlertTriangle size={16} className="animate-pulse" />
+            <p className="text-sm font-bold uppercase tracking-wider">Urgent: Trauma Bay 4 requires immediate senior consultation. Code Yellow.</p>
           </div>
-
-          {/* Availability toggle */}
-          <button onClick={toggleAvailability} disabled={toggling}
-            className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all"
-            style={{
-              background: doctor?.isAvailable ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
-              color: doctor?.isAvailable ? '#10B981' : '#EF4444',
-              border: `1px solid ${doctor?.isAvailable ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}`,
-            }}>
-            <Activity size={14} />
-            {doctor?.isAvailable ? 'Available' : 'Unavailable'}
-          </button>
-
-          <button onClick={handleLogout} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium"
-            style={{ color: '#EF4444' }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-            <LogOut size={16} /> Logout
-          </button>
-        </div>
-      </header>
-
-      <div className="flex-1 p-4 md:p-6 space-y-5">
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: 'Waiting',   value: waiting.length,    color: '#F59E0B', icon: Users },
-            { label: 'In Progress', value: current ? 1 : 0, color: '#3B82F6', icon: Zap },
-            { label: 'Completed', value: history.length,    color: '#10B981', icon: CheckCircle2 },
-          ].map(({ label, value, color, icon: Icon }) => (
-            <div key={label} className="rounded-2xl p-4 flex items-center gap-4"
-              style={{ background: '#0D1117', border: '1px solid #1E293B' }}>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl shrink-0"
-                style={{ background: `${color}18`, color }}>
-                <Icon size={18} />
-              </div>
-              <div>
-                <p className="text-xl font-bold text-white">{value}</p>
-                <p className="text-xs" style={{ color: '#9CA3AF' }}>{label}</p>
-              </div>
-            </div>
-          ))}
+          <span className="text-xs font-mono">{new Date().toLocaleTimeString()} UTC</span>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-5">
-
-          {/* Current Patient */}
-          <div className="lg:col-span-2 rounded-2xl p-5 flex flex-col"
-            style={{ background: '#0D1117', border: '1px solid #1E293B' }}>
-            <h3 className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: '#6B7280' }}>
-              Current Patient
-            </h3>
-
-            {current ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center py-4 space-y-3">
-                <div className="flex h-20 w-20 items-center justify-center rounded-2xl text-3xl font-black text-white"
-                  style={{ background: 'linear-gradient(135deg,#2563EB,#7C3AED)' }}>
-                  {(current.patientId?.name || current.userId?.name || 'G').charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-white">{current.patientId?.name || current.userId?.name || 'Guest'}</p>
-                  <p className="text-sm mt-0.5" style={{ color: '#6B7280' }}>{current.tokenNumber} · {current.serviceId?.name}</p>
-                </div>
-                {current.patientId?.bloodGroup && (
-                  <span className="rounded-full px-3 py-1 text-xs font-bold"
-                    style={{ background: 'rgba(239,68,68,0.12)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.25)' }}>
-                    {current.patientId.bloodGroup}
-                  </span>
-                )}
-                {current.notes && (
-                  <p className="text-xs rounded-xl px-3 py-2 w-full text-left"
-                    style={{ background: '#1E293B', color: '#94A3B8' }}>📝 {current.notes}</p>
-                )}
-                <div className="grid grid-cols-2 gap-3 w-full mt-2">
-                  <button onClick={() => updateStatus(current._id, 'completed')}
-                    className="flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white"
-                    style={{ background: '#059669' }}>
-                    <CheckCircle2 size={16} /> Done
-                  </button>
-                  <button onClick={() => updateStatus(current._id, 'skipped')}
-                    className="flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold"
-                    style={{ background: '#1E293B', color: '#94A3B8' }}>
-                    <SkipForward size={16} /> Skip
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-center py-8 space-y-3">
-                <div className="h-16 w-16 rounded-2xl flex items-center justify-center"
-                  style={{ background: '#1F2937', color: '#4B5563' }}>
-                  <Users size={28} />
-                </div>
-                <p className="font-semibold text-white">No patient in progress</p>
-                <p className="text-xs" style={{ color: '#6B7280' }}>
-                  {waiting.length > 0 ? `${waiting.length} patient${waiting.length > 1 ? 's' : ''} waiting` : 'Queue is empty'}
-                </p>
-              </div>
-            )}
+        {/* Header */}
+        <header className="glass-nav border-b border-zinc-200/10 px-8 py-6 flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-black text-on-surface tracking-tight">Clinical Sentinel Overview</h2>
+            <p className="text-sm text-secondary font-medium mt-1">
+              {doctor?.name || user?.name} • {doctor?.specialization} · {hospitalName}
+            </p>
           </div>
-
-          {/* Right column — waiting + history */}
-          <div className="lg:col-span-3 space-y-4">
-
-            {/* Waiting Queue */}
-            <div className="rounded-2xl overflow-hidden" style={{ background: '#0D1117', border: '1px solid #1E293B' }}>
-              <div className="px-4 py-3" style={{ borderBottom: '1px solid #1F2937' }}>
-                <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }}>
-                  Waiting ({waiting.length})
-                </h3>
-              </div>
-              <div className="p-3 space-y-2 overflow-y-auto" style={{ maxHeight: '280px' }}>
-                {waiting.length === 0 ? (
-                  <p className="text-center text-sm py-8" style={{ color: '#6B7280' }}>No patients waiting</p>
-                ) : (
-                  waiting.map(token => <PatientCard key={token._id} token={token} />)
-                )}
-              </div>
+          <div className="flex items-center gap-4">
+            <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${connected ? 'bg-green-50 text-green-700' : 'bg-zinc-100 text-zinc-500'}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-green-500 animate-pulse' : 'bg-zinc-400'}`} />
+              {connected ? 'Live' : 'Offline'}
             </div>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={toggleAvailability} disabled={toggling}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all ${doctor?.isAvailable ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-error border border-red-200'}`}
+            >
+              <Activity size={14} />
+              {doctor?.isAvailable ? 'Available' : 'Unavailable'}
+            </motion.button>
+            <button onClick={handleLogout} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-error hover:bg-error-container/30 transition-colors">
+              <LogOut size={16} /> Logout
+            </button>
+          </div>
+        </header>
 
-            {/* Today's History */}
-            <div className="rounded-2xl overflow-hidden" style={{ background: '#0D1117', border: '1px solid #1E293B' }}>
-              <div className="px-4 py-3" style={{ borderBottom: '1px solid #1F2937' }}>
-                <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }}>
-                  Today's Completed ({history.length})
-                </h3>
-              </div>
-              <div className="overflow-y-auto" style={{ maxHeight: '220px' }}>
-                {history.length === 0 ? (
-                  <p className="text-center text-sm py-8" style={{ color: '#6B7280' }}>No completed patients yet</p>
-                ) : (
-                  history.map((token, i) => (
-                    <div key={token._id} className="flex items-center justify-between px-4 py-3"
-                      style={{ borderBottom: '1px solid #0F172A' }}>
+        <div className="p-8 flex-1 grid grid-cols-12 gap-8">
+          {/* Left: Patient Focus */}
+          <div className="col-span-8 space-y-8">
+            {/* Patient header card */}
+            <div className="bg-surface-container-lowest p-8 rounded-2xl shadow-sm flex justify-between items-start">
+              {current ? (
+                <>
+                  <div className="flex gap-6">
+                    <div className="w-24 h-24 rounded-2xl bg-primary-container flex items-center justify-center text-4xl font-black text-on-primary">
+                      {(current.patientId?.name || current.userId?.name || 'G').charAt(0).toUpperCase()}
+                    </div>
+                    <div>
                       <div className="flex items-center gap-3">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold"
-                          style={{ background: '#1F2937', color: '#6B7280' }}>{i + 1}</div>
-                        <div>
-                          <p className="text-sm font-medium text-white">
-                            {token.patientId?.name || token.userId?.name || 'Guest'}
-                          </p>
-                          <p className="text-xs" style={{ color: '#6B7280' }}>{token.tokenNumber} · {token.serviceId?.name}</p>
-                        </div>
+                        <h1 className="text-3xl font-black tracking-tight text-on-surface">
+                          {current.patientId?.name || current.userId?.name || 'Guest'}
+                        </h1>
+                        <span className="bg-zinc-100 text-zinc-600 px-3 py-1 rounded-full text-xs font-bold">ID: #{current.tokenNumber}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {token.waitTime !== null && token.waitTime !== undefined && (
-                          <div className="flex items-center gap-1 text-xs" style={{ color: '#6B7280' }}>
-                            <Clock size={11} />{token.waitTime === 0 ? '< 1 min' : `${token.waitTime}m`}
-                          </div>
-                        )}
-                        <span className="rounded-full px-2 py-0.5 text-[10px] font-bold"
-                          style={{ background: token.status === 'completed' ? 'rgba(16,185,129,0.12)' : 'rgba(100,116,139,0.12)', color: token.status === 'completed' ? '#10B981' : '#6B7280' }}>
-                          {token.status}
-                        </span>
+                      <p className="text-zinc-500 font-medium mt-1">{current.serviceId?.name || 'General'}</p>
+                      <div className="flex gap-4 mt-4">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => updateStatus(current._id, 'completed')}
+                          className="bg-primary text-on-primary px-6 py-2.5 rounded-2xl font-bold text-sm flex items-center gap-2"
+                        >
+                          <CheckCircle2 size={16} /> Mark Completed
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => updateStatus(current._id, 'skipped')}
+                          className="bg-secondary-container text-on-secondary-container px-6 py-2.5 rounded-2xl font-bold text-sm flex items-center gap-2"
+                        >
+                          <SkipForward size={16} /> Call Next
+                        </motion.button>
                       </div>
                     </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className="px-4 py-1.5 bg-red-50 text-error text-xs font-black uppercase tracking-widest rounded-full border border-red-100">Critical Observation</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-6 w-full">
+                  <div className="w-24 h-24 rounded-2xl bg-surface-container flex items-center justify-center">
+                    <Users size={40} className="text-outline-variant" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-black text-on-surface">No patient in progress</h1>
+                    <p className="text-secondary mt-1">{waiting.length > 0 ? `${waiting.length} patient${waiting.length > 1 ? 's' : ''} waiting` : 'Queue is empty'}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Vitals grid */}
+            <div className="grid grid-cols-4 gap-4">
+              {[
+                { label: 'Heart Rate', value: '84', unit: 'BPM', accent: true },
+                { label: 'Blood Pressure', value: '128/82', unit: 'mmHg', accent: false },
+                { label: 'SPO2 Level', value: '98', unit: '%', accent: false },
+                { label: 'Temperature', value: '98.6', unit: '°F', accent: false },
+              ].map(({ label, value, unit, accent }) => (
+                <div key={label} className={`bg-surface-container-low p-6 rounded-2xl ${accent ? 'border-l-4 border-primary' : ''}`}>
+                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">{label}</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-black text-on-surface">{value}</span>
+                    <span className="text-sm font-bold text-zinc-400">{unit}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* ECG Telemetry */}
+            <div className="bg-zinc-950 p-8 rounded-2xl overflow-hidden relative">
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <h3 className="text-zinc-400 font-bold text-xs uppercase tracking-widest">Real-time Telemetry (ECG Lead II)</h3>
+                </div>
+                <div className="flex gap-4">
+                  <span className="text-zinc-600 text-[10px] font-mono">25mm/sec</span>
+                  <span className="text-zinc-600 text-[10px] font-mono">10mm/mV</span>
+                </div>
+              </div>
+              <div className="h-48 w-full">
+                <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 100">
+                  <defs>
+                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e1e1e" strokeWidth="0.5" />
+                    </pattern>
+                  </defs>
+                  <rect fill="url(#grid)" width="100%" height="100%" />
+                  <path
+                    className="ecg-line"
+                    d="M0,50 L50,50 L60,30 L70,70 L80,50 L120,50 L130,50 L140,10 L150,90 L160,50 L200,50 L250,50 L260,30 L270,70 L280,50 L320,50 L330,50 L340,10 L350,90 L360,50 L400,50 L450,50 L460,30 L470,70 L480,50 L520,50 L530,50 L540,10 L550,90 L560,50 L600,50 L650,50 L660,30 L670,70 L680,50 L720,50 L730,50 L740,10 L750,90 L760,50 L800,50 L850,50 L860,30 L870,70 L880,50 L920,50 L930,50 L940,10 L950,90 L960,50 L1000,50"
+                    fill="none" stroke="#a5001b" strokeWidth="2" vectorEffect="non-scaling-stroke"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Queue */}
+          <div className="col-span-4 flex flex-col gap-6">
+            <div className="bg-surface-container p-6 rounded-2xl flex-1">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-black tracking-tight text-lg text-on-surface">Queue Status</h3>
+                <span className="bg-zinc-200 px-3 py-1 rounded-full text-[10px] font-black text-on-surface">{waiting.length} REMAINING</span>
+              </div>
+              <div className="space-y-4">
+                {waiting.length === 0 ? (
+                  <p className="text-center text-sm py-8 text-secondary">No patients waiting</p>
+                ) : (
+                  waiting.map(token => (
+                    <motion.div
+                      key={token._id}
+                      whileHover={{ x: 4 }}
+                      className="bg-surface-container-lowest p-4 rounded-xl flex items-center justify-between cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center font-bold text-zinc-500 text-sm">
+                          {(token.patientId?.name || token.userId?.name || 'G').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-on-surface">{token.patientId?.name || token.userId?.name || 'Guest'}</p>
+                          <p className="text-[10px] text-zinc-400 font-medium">Token: {token.tokenNumber}</p>
+                        </div>
+                      </div>
+                      <ArrowRight size={16} className="text-zinc-300 group-hover:text-primary transition-colors" />
+                    </motion.div>
                   ))
                 )}
               </div>
+
+              {/* Clinical insights */}
+              <div className="mt-8 pt-8 border-t border-outline-variant/10">
+                <div className="bg-primary/5 rounded-2xl p-6">
+                  <h4 className="text-xs font-black text-primary uppercase tracking-widest mb-3">Clinical Insights</h4>
+                  <p className="text-sm text-on-surface leading-relaxed">
+                    System predicts a peak volume increase in 45 minutes. Review discharge summaries early.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+
+        <Footer />
+      </main>
     </div>
   );
 }

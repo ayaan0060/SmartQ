@@ -3,11 +3,12 @@ import { cn } from '../utils/cn';
 
 const Badge = ({ children, variant = 'neutral', className, ...props }) => {
   const variants = {
-    primary: 'bg-primary-50 text-primary border-primary/20',
-    success: 'bg-success-50 text-success border-success/20',
-    warning: 'bg-warning-50 text-warning border-warning/20',
-    danger: 'bg-red-50 text-red-600 border-red-100',
-    neutral: 'bg-slate-100 text-slate-600 border-slate-200',
+    primary: 'bg-primary-fixed text-primary border-primary/20',
+    success: 'bg-green-50 text-green-700 border-green-200',
+    warning: 'bg-amber-50 text-amber-700 border-amber-200',
+    error:   'bg-error-container text-on-error-container border-error/20',
+    danger:  'bg-error-container text-on-error-container border-error/20',
+    neutral: 'bg-surface-container text-secondary border-outline-variant/30',
   };
 
   return (

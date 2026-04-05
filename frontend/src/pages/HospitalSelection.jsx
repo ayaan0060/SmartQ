@@ -1,104 +1,56 @@
-/**
- * HospitalSelection.jsx
- * ─────────────────────
- * Patient portal — choose a hospital.
- *
- * New behaviour (zero breaking changes to existing routing/auth/API):
- *  • On mount: requests GPS once via useGeolocation
- *  • Calculates Haversine distance to every hospital with valid coords
- *  • Sorts hospitals by distance (nearest first) when GPS is available
- *  • Shows "Nearest to you" banner at the top
- *  • Highlights nearest card with green border + "Nearest" badge
- *  • "Get Directions" button on each card opens DirectionsModal
- */
-
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-  lazy,
-  Suspense,
-} from 'react';
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-// eslint-disable-next-line no-unused-vars
-import { motion, useReducedMotion } from 'framer-motion';
-import { Search, Building2, MapPin, Star, Navigation, AlertCircle } from 'lucide-react';
-import { staggerContainer, fadeUp } from '../utils/motion';
+import { Search, Building2, MapPin, Star, Navigation, AlertCircle, Bookmark, SlidersHorizontal, Map } from 'lucide-react';
 
-// Stores & Services
 import api from '../lib/api';
 import { useHospitalStore } from '../features/hospital/useHospitalStore';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { haversineDistanceKm } from '../services/osrmService';
-
-// Components
-import HospitalCard from '../components/HospitalCard';
 import Skeleton from '../components/Skeleton';
 import PageLayout from '../layouts/PageLayout';
-import Card from '../components/Card';
 
-// Lazy-load DirectionsModal (pulls in leaflet only when needed)
 const DirectionsModal = lazy(() => import('../components/DirectionsModal'));
 
-// ── Haversine guard (same formula, local copy for sorting) ────────────────────
 const safeDistance = (lat1, lng1, lat2, lng2) => {
   if ([lat1, lng1, lat2, lng2].some(v => v == null || isNaN(Number(v)))) return Infinity;
   return haversineDistanceKm(Number(lat1), Number(lng1), Number(lat2), Number(lng2));
 };
 
-// ── HospitalSelection ─────────────────────────────────────────────────────────
-const HospitalSelection = () => {
+// TODO: Replace with real wait time data from API
+const MOCK_WAIT_TIMES = ['8 Min Wait', '25 Min Wait', '12 Min Wait', '5 Min Wait', '45 Min Wait', '15 Min Wait'];
+
+export default function HospitalSelection() {
   const [hospitals, setHospitals] = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [search,    setSearch]    = useState('');
-
-  // Directions modal state
+  const [loading, setLoading]     = useState(true);
+  const [search, setSearch]       = useState('');
+  const [filter, setFilter]       = useState('Nearby');
   const [directionsHospital, setDirectionsHospital] = useState(null);
-  const [modalOpen,          setModalOpen]          = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  const shouldReduceMotion = useReducedMotion();
   const setSelectedHospital = useHospitalStore(s => s.setSelectedHospital);
   const navigate = useNavigate();
-
-  // GPS — one-shot on mount
   const { getPosition, position: userLocation, geoError } = useGeolocation();
 
-  // ── Fetch hospitals ─────────────────────────────────────────────────────────
   useEffect(() => {
-    const fetchHospitals = async () => {
-      try {
-        const res = await api.get('/hospitals');
-        setHospitals(res.data?.data?.hospitals || []);
-      } catch {
-        toast.error('Failed to load hospitals');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchHospitals();
+    api.get('/hospitals')
+      .then(r => setHospitals(r.data?.data?.hospitals || []))
+      .catch(() => toast.error('Failed to load hospitals'))
+      .finally(() => setLoading(false));
   }, []);
 
-  // ── Request GPS once hospitals are loaded ───────────────────────────────────
   useEffect(() => {
-    if (hospitals.length > 0) {
-      getPosition().catch(() => {}); // errors already toasted inside hook
-    }
-  }, [hospitals.length]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (hospitals.length > 0) getPosition().catch(() => {});
+  }, [hospitals.length]); // eslint-disable-line
 
-  // ── Enrich hospitals with distance + sort ───────────────────────────────────
-  const hospitalsWithDistance = useMemo(() => {
-    return hospitals.map(h => ({
+  const hospitalsWithDistance = useMemo(() =>
+    hospitals.map(h => ({
       ...h,
-      _distanceKm: safeDistance(
-        userLocation?.lat,
-        userLocation?.lng,
-        h.coordinates?.lat,
-        h.coordinates?.lng
-      ),
-    }));
-  }, [hospitals, userLocation]);
+      _distanceKm: safeDistance(userLocation?.lat, userLocation?.lng, h.coordinates?.lat, h.coordinates?.lng),
+    })),
+    [hospitals, userLocation]
+  );
 
   const sortedHospitals = useMemo(() => {
     if (!userLocation) return hospitalsWithDistance;
@@ -111,18 +63,12 @@ const HospitalSelection = () => {
     return h?._distanceKm !== Infinity ? h : null;
   }, [sortedHospitals, userLocation]);
 
-  // ── Filtered list (search applied after sort) ───────────────────────────────
   const filteredHospitals = useMemo(() => {
     if (!search) return sortedHospitals;
     const q = search.toLowerCase();
-    return sortedHospitals.filter(
-      h =>
-        h.name?.toLowerCase().includes(q) ||
-        h.location?.toLowerCase().includes(q)
-    );
+    return sortedHospitals.filter(h => h.name?.toLowerCase().includes(q) || h.location?.toLowerCase().includes(q));
   }, [sortedHospitals, search]);
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
   const handleSelect = useCallback((hospital) => {
     setSelectedHospital(hospital);
     navigate('/dashboard');
@@ -133,220 +79,177 @@ const HospitalSelection = () => {
     setModalOpen(true);
   }, []);
 
-  const handleCloseModal = useCallback(() => {
-    setModalOpen(false);
-    // keep directionsHospital set until modal fully closes to avoid flicker
-    setTimeout(() => setDirectionsHospital(null), 300);
-  }, []);
-
-  // ── Loading skeleton ────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <PageLayout className="space-y-12 py-10">
-        <div className="flex flex-col items-center gap-4">
-          <Skeleton className="h-12 w-64 rounded-xl" />
-          <Skeleton className="h-4 w-48 rounded-lg" />
-        </div>
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3, 4, 5, 6].map(i => (
-            <Skeleton key={i} className="h-72 rounded-[2.5rem]" />
-          ))}
+      <PageLayout>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="h-72 rounded-2xl" />)}
         </div>
       </PageLayout>
     );
   }
 
   return (
-    <PageLayout className="container mx-auto max-w-7xl px-4 py-12 space-y-16">
-
-      {/* ── Page header ──────────────────────────────────────────────────── */}
-      <header className="flex flex-col items-center text-center space-y-6">
-        <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-900 text-white shadow-2xl shadow-slate-200 mb-2">
-          <Building2 size={40} />
+    <PageLayout>
+      {/* Header */}
+      <header className="mb-10 max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary mb-2 block">Provider Network</span>
+            <h1 className="text-4xl font-extrabold text-on-surface tracking-tight">Select Care Center</h1>
+            <p className="text-zinc-500 mt-2 max-w-md">Access real-time queue data and high-authority clinical facilities across the metropolitan area.</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <div className="bg-surface-container-high p-1 rounded-2xl flex">
+              {['Nearby', 'Top Rated', 'Available'].map(f => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${filter === f ? 'bg-surface-container-lowest shadow-sm text-on-surface' : 'text-zinc-500'}`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+            <button className="bg-surface-container-high p-3 rounded-2xl">
+              <SlidersHorizontal size={20} className="text-on-surface" />
+            </button>
+          </div>
         </div>
-        <div className="space-y-2">
-          <h1 className="text-5xl font-black tracking-tight text-white font-display">
-            Choose a Hospital
-          </h1>
-          <p className="text-xl text-slate-500 max-w-2xl font-medium">
-            Find a hospital near you and book your slot instantly. No more waiting in long physical queues.
-          </p>
-        </div>
 
-        <div className="relative w-full max-w-xl mt-8 group">
-          <Search
-            className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors"
-            size={24}
-          />
+        {/* Search */}
+        <div className="mt-6 flex items-center bg-surface-container-low px-4 py-3 rounded-2xl gap-3">
+          <Search size={20} className="text-on-surface-variant shrink-0" />
           <input
             type="text"
-            placeholder="Search by name or location..."
+            placeholder="Search facilities..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full h-16 pl-14 pr-6 bg-slate-800/50 border-2 border-slate-700 rounded-4xl focus:border-primary/50 focus:ring-4 focus:ring-primary/20 transition-all outline-none text-xl font-medium placeholder:text-slate-500 text-white"
+            className="bg-transparent border-none focus:ring-0 text-sm w-full text-on-surface outline-none placeholder:text-secondary"
           />
         </div>
       </header>
 
-      {/* ── Nearest hospital banner ───────────────────────────────────────── */}
+      {/* Nearest banner */}
       {nearestHospital && (
-        <div
-          className="flex items-center justify-between gap-4 rounded-2xl px-6 py-4"
-          style={{
-            background: 'rgba(16,185,129,0.08)',
-            border:     '1px solid rgba(16,185,129,0.25)',
-          }}
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-              style={{ background: 'rgba(16,185,129,0.15)' }}
-            >
-              <Navigation size={18} style={{ color: '#10B981' }} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-white truncate">
-                Nearest to you:{' '}
-                <span style={{ color: '#10B981' }}>{nearestHospital.name}</span>
-                {' '}—{' '}
-                <span style={{ color: '#10B981' }}>
-                  {nearestHospital._distanceKm.toFixed(1)} km away
-                </span>
-              </p>
-            </div>
+        <div className="flex items-center justify-between gap-4 rounded-2xl px-6 py-4 mb-8 bg-green-50 border border-green-200">
+          <div className="flex items-center gap-3">
+            <Navigation size={18} className="text-green-600 shrink-0" />
+            <p className="text-sm font-bold text-on-surface">
+              Nearest to you: <span className="text-green-700">{nearestHospital.name}</span>
+              {' '}— <span className="text-green-700">{nearestHospital._distanceKm.toFixed(1)} km away</span>
+            </p>
           </div>
-
           <button
             onClick={() => handleGetDirections(nearestHospital)}
-            aria-label={`Get directions to ${nearestHospital.name}`}
-            className="shrink-0 flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all"
-            style={{
-              background: 'rgba(16,185,129,0.15)',
-              border:     '1px solid rgba(16,185,129,0.3)',
-              color:      '#10B981',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#10B981', e.currentTarget.style.color = '#fff')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(16,185,129,0.15)', e.currentTarget.style.color = '#10B981')}
+            className="shrink-0 flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold bg-green-100 text-green-700 hover:bg-green-600 hover:text-white transition-all"
           >
-            <Navigation size={14} />
-            Get Directions
+            <Navigation size={14} /> Get Directions
           </button>
         </div>
       )}
 
-      {/* GPS denied / error banner */}
       {geoError && !nearestHospital && (
-        <div
-          className="flex items-center gap-3 rounded-2xl px-6 py-4"
-          style={{
-            background: 'rgba(245,158,11,0.08)',
-            border:     '1px solid rgba(245,158,11,0.2)',
-          }}
-        >
-          <AlertCircle size={18} style={{ color: '#F59E0B', flexShrink: 0 }} />
-          <p className="text-sm" style={{ color: '#F59E0B' }}>
-            Enable location for nearest hospital detection and walking directions.
-          </p>
+        <div className="flex items-center gap-3 rounded-2xl px-6 py-4 mb-8 bg-amber-50 border border-amber-200">
+          <AlertCircle size={18} className="text-amber-600 shrink-0" />
+          <p className="text-sm text-amber-700">Enable location for nearest hospital detection and walking directions.</p>
         </div>
       )}
 
-      {/* ── Recommended carousel (unchanged) ─────────────────────────────── */}
-      {hospitals.length > 0 && !search && (
-        <div className="space-y-8">
-          <div className="flex items-center justify-between px-2">
-            <h2 className="text-2xl font-black text-white font-display">
-              Recommended for You
-            </h2>
-            <button className="text-sm font-bold text-primary hover:bg-primary/5 px-4 py-2 rounded-xl transition-colors">
-              View All
-            </button>
-          </div>
-          <div className="flex gap-8 overflow-x-auto pb-8 px-2 no-scrollbar scroll-smooth">
-            {hospitals.slice(0, 3).map(hospital => (
-              <Card
-                key={hospital._id}
-                onClick={() => handleSelect(hospital)}
-                className="min-w-[320px] md:min-w-[400px] p-8 cursor-pointer group hover:border-primary/50 hover:scale-[1.02] transition-all h-60 flex flex-col justify-between border-none shadow-premium rounded-[2.5rem]"
-              >
-                <div className="flex justify-between items-start">
-                  <Card className="p-8 border-none bg-slate-800/50 flex flex-col items-center justify-center gap-4 rounded-4xl hover:scale-[1.02] transition-transform">
-                    <Building2 size={28} />
-                  </Card>
-                  <div className="flex items-center gap-1.5 bg-yellow-400/10 text-yellow-600 px-3 py-1.5 rounded-xl text-xs font-black">
-                    <Star size={14} fill="currentColor" />
-                    {hospital.rating || '4.8'}
+      {/* Hospital Grid */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+        {filteredHospitals.map((hospital, idx) => {
+          const isNearest = nearestHospital?._id === hospital._id;
+          const waitLabel = MOCK_WAIT_TIMES[idx % MOCK_WAIT_TIMES.length]; // TODO: use real wait time
+          const isLong = waitLabel.includes('25') || waitLabel.includes('45');
+
+          return (
+            <motion.article
+              key={hospital._id}
+              whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(26,28,28,0.12)' }}
+              className={`bg-surface-container-lowest rounded-2xl overflow-hidden group shadow-sm flex flex-col cursor-pointer ${isNearest ? 'ring-2 ring-green-400' : ''}`}
+            >
+              {/* Image / placeholder */}
+              <div className="relative h-48 bg-gradient-to-br from-surface-container to-surface-container-high overflow-hidden">
+                <div className="w-full h-full flex items-center justify-center">
+                  <Building2 size={64} className="text-outline-variant group-hover:scale-110 transition-transform duration-500" />
+                </div>
+                <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full flex items-center gap-1">
+                  <Star size={12} className="text-yellow-500 fill-yellow-500" />
+                  <span className="text-xs font-black text-on-surface">{hospital.rating || '4.8'}</span>
+                </div>
+                <div className={`absolute bottom-4 right-4 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${isLong ? 'bg-zinc-800' : 'bg-primary'}`}>
+                  {userLocation && hospital._distanceKm !== Infinity
+                    ? `${hospital._distanceKm.toFixed(1)} km`
+                    : waitLabel}
+                </div>
+                {isNearest && (
+                  <div className="absolute top-4 right-4 bg-green-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
+                    Nearest
                   </div>
+                )}
+              </div>
+
+              <div className="p-6 flex-1 flex flex-col">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="text-xl font-bold text-on-surface leading-tight">{hospital.name}</h3>
+                  <Bookmark size={20} className="text-zinc-300 shrink-0" />
                 </div>
-                <div className="space-y-1">
-                  <h3 className="text-2xl font-black text-white group-hover:text-primary transition-colors font-display line-clamp-1">
-                    {hospital.name}
-                  </h3>
-                  <p className="text-sm text-slate-400 font-bold flex items-center gap-1.5 uppercase tracking-wider">
-                    <MapPin size={14} className="text-primary" />
-                    {hospital.location}
-                  </p>
+                <div className="flex items-center gap-2 text-zinc-500 mb-6">
+                  <MapPin size={14} className="shrink-0" />
+                  <span className="text-xs font-medium">{hospital.location}</span>
                 </div>
-              </Card>
-            ))}
-          </div>
+                <div className="mt-auto grid grid-cols-2 gap-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => handleSelect(hospital)}
+                    className="bg-primary text-on-primary py-3 rounded-2xl font-bold text-xs uppercase tracking-wider hover:bg-primary-container transition-colors"
+                  >
+                    Book Appointment
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => handleGetDirections(hospital)}
+                    className="bg-secondary-container text-on-secondary-container py-3 rounded-2xl font-bold text-xs uppercase tracking-wider hover:bg-zinc-200 transition-colors"
+                  >
+                    Get Directions
+                  </motion.button>
+                </div>
+              </div>
+            </motion.article>
+          );
+        })}
+      </section>
+
+      {filteredHospitals.length === 0 && (
+        <div className="text-center py-24">
+          <Building2 size={64} className="mx-auto text-outline-variant mb-4" />
+          <h3 className="text-2xl font-black text-on-surface">No Hospitals Found</h3>
+          <p className="text-secondary mt-2">Try a different search term.</p>
+          <button onClick={() => setSearch('')} className="mt-6 text-primary font-bold hover:underline">Clear Search</button>
         </div>
       )}
 
-      {/* ── Main hospital grid ────────────────────────────────────────────── */}
-      <motion.div
-        variants={staggerContainer}
-        initial="hidden"
-        animate="visible"
-        className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3"
+      {/* Map FAB */}
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className="fixed bottom-8 right-8 bg-zinc-900 text-white px-6 py-4 rounded-full flex items-center gap-3 shadow-2xl z-50"
       >
-        {filteredHospitals.map(hospital => (
-          <motion.div
-            key={hospital._id}
-            variants={shouldReduceMotion ? {} : fadeUp}
-          >
-            <HospitalCard
-              hospital={hospital}
-              onSelect={handleSelect}
-              isNearest={nearestHospital?._id === hospital._id}
-              distanceKm={
-                userLocation && hospital._distanceKm !== Infinity
-                  ? hospital._distanceKm.toFixed(1)
-                  : undefined
-              }
-              onGetDirections={handleGetDirections}
-            />
-          </motion.div>
-        ))}
-      </motion.div>
+        <Map size={20} />
+        <span className="font-bold text-sm tracking-wide">Show Map View</span>
+      </motion.button>
 
-      {/* ── Empty state ───────────────────────────────────────────────────── */}
-      {filteredHospitals.length === 0 && (
-        <Card className="flex flex-col items-center justify-center py-24 text-center border-dashed border-2 bg-slate-50/50 rounded-[3rem]">
-          <div className="mb-6 text-8xl grayscale opacity-50">🏥</div>
-          <h3 className="text-3xl font-black text-white font-display">No Hospitals Found</h3>
-          <p className="text-slate-500 max-w-md mt-2 font-medium">
-            We couldn't find any hospitals matching your search. Try another keyword or location.
-          </p>
-          <button
-            onClick={() => setSearch('')}
-            className="mt-8 font-bold text-primary hover:underline"
-          >
-            Clear Search
-          </button>
-        </Card>
-      )}
-
-      {/* ── Directions modal (lazy-loaded) ────────────────────────────────── */}
       <Suspense fallback={null}>
         <DirectionsModal
           isOpen={modalOpen}
-          onClose={handleCloseModal}
+          onClose={() => { setModalOpen(false); setTimeout(() => setDirectionsHospital(null), 300); }}
           hospital={directionsHospital}
           userLocation={userLocation}
         />
       </Suspense>
     </PageLayout>
   );
-};
-
-export default HospitalSelection;
+}

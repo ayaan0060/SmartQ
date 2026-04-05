@@ -1,14 +1,25 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { Zap, Wifi, WifiOff, Users, CheckCircle2 } from 'lucide-react';
+import { Stethoscope, Wifi, WifiOff, Megaphone, Zap, AlertTriangle } from 'lucide-react';
 import api from '../lib/api';
 import { connectSocket, getSocket } from '../services/socket';
 
-const priorityConfig = {
-  emergency: { label: 'EMERGENCY', color: '#EF4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.4)' },
-  high:      { label: 'HIGH',      color: '#F59E0B', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.4)' },
-  normal:    { label: 'NORMAL',    color: '#10B981', bg: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.4)' },
-};
+// TODO: Replace with real queue data from socket
+const MOCK_STATIONS = [
+  { id: 'A-142', station: 'Station 01', icon: Stethoscope, active: true },
+  { id: 'B-089', station: 'Station 02', icon: Stethoscope, active: true },
+  { id: 'D-210', station: 'Diagnostics', icon: null, active: false },
+  { id: 'P-012', station: 'Pharmacy',   icon: null, active: false },
+];
+
+const MOCK_QUEUE = [
+  { id: 'A-143', est: '2m', next: true },
+  { id: 'B-090', est: '5m' },
+  { id: 'A-144', est: '8m' },
+  { id: 'D-211', est: '12m' },
+  { id: 'P-013', est: '15m' },
+  { id: 'A-145', est: '19m' },
+];
 
 export default function DisplayBoard() {
   const { hospitalId } = useParams();
@@ -18,9 +29,7 @@ export default function DisplayBoard() {
   const [connected, setConnected] = useState(false);
   const [hospitalName, setHospitalName] = useState('');
   const [time, setTime]           = useState(new Date());
-  const [flash, setFlash]         = useState(false);
 
-  // Clock
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(t);
@@ -28,187 +37,154 @@ export default function DisplayBoard() {
 
   const loadQueue = useCallback(async () => {
     try {
-      // fetch queue without auth — public endpoint via hospitalId query
       const r = await api.get(`/queue/display/${hospitalId}`);
       const tokens = r.data.data.tokens || [];
-      const hospitalName = r.data.data.hospitalName || '';
-      setHospitalName(hospitalName);
+      setHospitalName(r.data.data.hospitalName || '');
       setCurrent(tokens.find(t => t.status === 'in-progress') || null);
-      setWaiting(tokens.filter(t => t.status === 'waiting').slice(0, 5));
+      setWaiting(tokens.filter(t => t.status === 'waiting').slice(0, 6));
       setCompleted(r.data.data.completedCount || 0);
-    } catch {
-      // silently retry via socket
-    }
+    } catch {}
   }, [hospitalId]);
 
   useEffect(() => {
     loadQueue();
-
     const socket = connectSocket(hospitalId);
     socket.on('connect',    () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
-
-    const handleUpdate = () => { loadQueue(); triggerFlash(); };
-    socket.on('queue:add',             handleUpdate);
-    socket.on('queue:update',          handleUpdate);
-    socket.on('queue:priority-change', handleUpdate);
-    socket.on('queue:remove',          handleUpdate);
-
+    const handleUpdate = () => loadQueue();
+    ['queue:add', 'queue:update', 'queue:priority-change', 'queue:remove'].forEach(e => socket.on(e, handleUpdate));
     return () => {
       const s = getSocket();
-      if (s) {
-        s.off('queue:add',             handleUpdate);
-        s.off('queue:update',          handleUpdate);
-        s.off('queue:priority-change', handleUpdate);
-        s.off('queue:remove',          handleUpdate);
-      }
+      if (s) ['queue:add', 'queue:update', 'queue:priority-change', 'queue:remove'].forEach(e => s.off(e, handleUpdate));
     };
   }, [hospitalId, loadQueue]);
 
-  const triggerFlash = () => {
-    setFlash(true);
-    setTimeout(() => setFlash(false), 800);
-  };
+  const fmt = (d) => d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-  const fmt = (d) => d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  const fmtDate = (d) => d.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  // Use real data if available, fall back to mock
+  const displayStations = waiting.length > 0
+    ? waiting.slice(0, 4).map((t, i) => ({ id: t.tokenNumber, station: `Station ${String(i + 1).padStart(2, '0')}`, active: i < 2 }))
+    : MOCK_STATIONS;
+
+  const displayQueue = waiting.length > 0
+    ? waiting.map((t, i) => ({ id: t.tokenNumber, est: `${(i + 1) * 3}m`, next: i === 0 }))
+    : MOCK_QUEUE;
 
   return (
-    <div className="min-h-screen flex flex-col select-none" style={{ background: '#060B14', fontFamily: 'system-ui, sans-serif' }}>
-
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-10 py-5" style={{ background: '#0A0F1E', borderBottom: '1px solid rgba(59,130,246,0.2)' }}>
+    <div className="min-h-screen bg-surface text-on-surface flex flex-col select-none">
+      {/* Top nav */}
+      <nav className="fixed top-0 w-full z-50 border-b border-zinc-200/10 glass-nav shadow-sm flex justify-between items-center px-6 py-3">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: 'linear-gradient(135deg,#2563EB,#7C3AED)' }}>
-            <Zap size={24} className="text-white" fill="white" />
+          <span className="text-2xl font-black italic text-red-700 tracking-tight">SmartQ</span>
+          <div className="h-6 w-px bg-outline-variant/30" />
+          <span className="text-sm font-bold uppercase tracking-widest text-zinc-500">Live Display Board</span>
+        </div>
+        <div className="flex items-center gap-6">
+          <div className="flex flex-col items-end">
+            <span className="text-[10px] uppercase tracking-widest font-bold text-primary">System Status</span>
+            <span className="text-xs font-bold text-on-surface">CLINIC ACTIVE</span>
           </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#475569' }}>SmartQ Display</p>
-            <h1 className="text-2xl font-bold text-white">{hospitalName || 'Hospital Queue'}</h1>
+          <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${connected ? 'bg-green-50 text-green-700' : 'bg-zinc-100 text-zinc-500'}`}>
+            {connected ? <Wifi size={14} /> : <WifiOff size={14} />}
+            {connected ? 'Live' : 'Offline'}
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-4xl font-bold tabular-nums text-white">{fmt(time)}</p>
-          <p className="text-sm mt-1" style={{ color: '#64748B' }}>{fmtDate(time)}</p>
-        </div>
-        <div className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold"
-          style={{ background: connected ? 'rgba(16,185,129,0.1)' : 'rgba(100,116,139,0.1)', color: connected ? '#10B981' : '#6B7280', border: `1px solid ${connected ? 'rgba(16,185,129,0.25)' : 'rgba(100,116,139,0.2)'}` }}>
-          {connected ? <Wifi size={16} /> : <WifiOff size={16} />}
-          {connected ? 'Live' : 'Offline'}
-        </div>
-      </div>
+      </nav>
 
-      <div className="flex flex-1 gap-6 p-8">
-
-        {/* NOW SERVING — left big panel */}
-        <div className="flex flex-col flex-1 rounded-3xl overflow-hidden"
-          style={{
-            background: flash ? 'rgba(37,99,235,0.15)' : '#0D1117',
-            border: `2px solid ${flash ? 'rgba(37,99,235,0.6)' : 'rgba(37,99,235,0.2)'}`,
-            transition: 'all 0.3s ease',
-          }}>
-          <div className="px-8 py-5" style={{ borderBottom: '1px solid #1E293B' }}>
-            <p className="text-sm font-bold uppercase tracking-widest" style={{ color: '#475569' }}>Now Serving</p>
+      <main className="flex-grow pt-20 pb-6 px-8 grid grid-cols-12 gap-8">
+        {/* Left: Now Serving */}
+        <div className="col-span-8 flex flex-col gap-6">
+          <div className="flex items-end justify-between px-2">
+            <div>
+              <h1 className="text-5xl font-black text-on-surface tracking-tighter uppercase">Now Serving</h1>
+              <p className="text-zinc-500 font-medium mt-1">Please proceed to the designated station when your number appears.</p>
+            </div>
+            <div className="bg-primary/5 px-4 py-2 rounded-xl border border-primary/10">
+              <span className="text-[10px] uppercase tracking-widest font-bold text-primary block text-right">Average Wait</span>
+              <span className="text-2xl font-black text-on-surface tracking-tight">14 MINS</span>
+            </div>
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-center py-10">
-            {current ? (
-              <>
-                <div className="text-[10rem] font-black leading-none text-white tracking-tight"
-                  style={{ textShadow: '0 0 60px rgba(37,99,235,0.5)' }}>
-                  {current.tokenNumber}
+          <div className="grid grid-cols-2 gap-6">
+            {displayStations.map(({ id, station, active }) => (
+              <div
+                key={id}
+                className={`bg-surface-container-lowest rounded-2xl p-8 flex flex-col items-center justify-center relative overflow-hidden group ${active ? 'border-l-8 border-primary' : 'border-l-8 border-zinc-300'}`}
+              >
+                <div className="absolute top-4 left-4 flex items-center gap-2">
+                  <Stethoscope size={18} className={active ? 'text-primary' : 'text-zinc-400'} />
+                  <span className={`text-xs font-bold tracking-widest uppercase ${active ? 'text-primary' : 'text-zinc-500'}`}>{station}</span>
                 </div>
-                <div className="mt-6 flex items-center gap-3">
-                  <span className="rounded-full px-4 py-1.5 text-sm font-bold"
-                    style={{
-                      background: priorityConfig[current.priority]?.bg || priorityConfig.normal.bg,
-                      color: priorityConfig[current.priority]?.color || priorityConfig.normal.color,
-                      border: `1px solid ${priorityConfig[current.priority]?.border || priorityConfig.normal.border}`,
-                    }}>
-                    {priorityConfig[current.priority]?.label || 'NORMAL'}
-                  </span>
-                  <span className="text-xl font-semibold" style={{ color: '#94A3B8' }}>
-                    {current.serviceId?.name || 'General'}
-                  </span>
+                <div className="text-[140px] font-black text-on-surface leading-none tracking-tighter">{id}</div>
+                <div className={`mt-4 px-6 py-2 rounded-full font-bold text-lg ${active ? 'bg-primary text-on-primary' : 'bg-zinc-100 text-zinc-600 uppercase tracking-wide'}`}>
+                  {active ? 'PROCEED NOW' : 'In Progress'}
                 </div>
-                <p className="mt-4 text-2xl font-semibold text-white">
-                  {current.patientId?.name || current.userId?.name || 'Patient'}
-                </p>
-                <div className="mt-8 rounded-2xl px-8 py-4 text-center animate-pulse"
-                  style={{ background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.25)' }}>
-                  <p className="text-lg font-bold" style={{ color: '#60A5FA' }}>Please proceed to the counter</p>
-                </div>
-              </>
-            ) : (
-              <div className="text-center space-y-4">
-                <div className="h-24 w-24 rounded-3xl flex items-center justify-center mx-auto" style={{ background: '#1F2937' }}>
-                  <Users size={48} style={{ color: '#374151' }} />
-                </div>
-                <p className="text-2xl font-bold" style={{ color: '#374151' }}>Counter Ready</p>
-                <p style={{ color: '#1F2937' }}>Waiting for next patient...</p>
-              </div>
-            )}
-          </div>
-
-          {/* Stats bar */}
-          <div className="grid grid-cols-3 divide-x" style={{ borderTop: '1px solid #1E293B', divideColor: '#1E293B' }}>
-            {[
-              { label: 'Waiting',   value: waiting.length, color: '#F59E0B' },
-              { label: 'Serving',   value: current ? 1 : 0, color: '#3B82F6' },
-              { label: 'Completed', value: completed,       color: '#10B981' },
-            ].map(({ label, value, color }) => (
-              <div key={label} className="flex flex-col items-center py-5" style={{ borderRight: '1px solid #1E293B' }}>
-                <p className="text-4xl font-black" style={{ color }}>{value}</p>
-                <p className="text-xs font-semibold uppercase tracking-wider mt-1" style={{ color: '#475569' }}>{label}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* NEXT UP — right panel */}
-        <div className="w-80 flex flex-col rounded-3xl overflow-hidden" style={{ background: '#0D1117', border: '1px solid #1E293B' }}>
-          <div className="px-6 py-5" style={{ borderBottom: '1px solid #1E293B' }}>
-            <p className="text-sm font-bold uppercase tracking-widest" style={{ color: '#475569' }}>Next Up</p>
-          </div>
-
-          <div className="flex-1 overflow-hidden">
-            {waiting.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full py-16">
-                <CheckCircle2 size={40} style={{ color: '#1F2937' }} />
-                <p className="mt-4 text-sm font-semibold" style={{ color: '#374151' }}>Queue is empty</p>
+        {/* Right: Queue + Announcements */}
+        <div className="col-span-4 flex flex-col gap-6">
+          {/* Queue status */}
+          <div className="bg-zinc-900 text-white rounded-2xl p-6 flex flex-col gap-4 overflow-hidden relative">
+            <div className="z-10">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-black uppercase tracking-tight">Queue Status</h2>
+                <span className="bg-primary text-[10px] px-2 py-1 rounded font-bold">LIVE UPDATE</span>
               </div>
-            ) : (
-              waiting.map((token, i) => {
-                const pCfg = priorityConfig[token.priority] || priorityConfig.normal;
-                return (
-                  <div key={token._id} className="flex items-center gap-4 px-6 py-4"
-                    style={{ borderBottom: '1px solid #0F172A', background: i === 0 ? 'rgba(37,99,235,0.06)' : 'transparent' }}>
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg font-black"
-                      style={{ background: i === 0 ? 'rgba(37,99,235,0.2)' : '#1F2937', color: i === 0 ? '#60A5FA' : '#4B5563' }}>
-                      {i + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-bold text-white text-lg truncate">{token.tokenNumber}</p>
-                        <span className="rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0"
-                          style={{ background: pCfg.bg, color: pCfg.color, border: `1px solid ${pCfg.border}` }}>
-                          {pCfg.label}
-                        </span>
-                      </div>
-                      <p className="text-xs truncate mt-0.5" style={{ color: '#475569' }}>
-                        {token.serviceId?.name || 'General'}
-                      </p>
+              <div className="flex flex-col gap-2">
+                {displayQueue.map(({ id, est, next }) => (
+                  <div key={id} className={`flex items-center justify-between p-4 rounded-xl ${next ? 'bg-white/10 backdrop-blur-sm' : 'bg-white/5'}`}>
+                    <span className={`text-2xl font-black ${next ? 'text-white' : 'text-zinc-300'}`}>{id}</span>
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] uppercase font-bold text-zinc-400">{next ? 'Next Up' : 'Waiting'}</span>
+                      <span className={`text-sm font-bold ${next ? 'text-primary' : 'text-zinc-400'}`}>Est. {est}</span>
                     </div>
                   </div>
-                );
-              })
-            )}
+                ))}
+              </div>
+            </div>
+            <div className="absolute bottom-0 right-0 w-32 h-32 bg-primary/20 blur-3xl rounded-full translate-x-10 translate-y-10" />
           </div>
 
-          <div className="px-6 py-4" style={{ borderTop: '1px solid #1E293B' }}>
-            <p className="text-xs text-center" style={{ color: '#1E293B' }}>
-              Powered by SmartQ
-            </p>
+          {/* Announcements */}
+          <div className="flex-grow bg-surface-container-low rounded-2xl p-6 flex flex-col gap-4">
+            <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Clinic Announcements</h3>
+            <div className="flex gap-4 p-4 bg-surface-container-lowest rounded-xl">
+              <Megaphone size={20} className="text-primary shrink-0" />
+              <p className="text-sm font-medium leading-relaxed text-on-surface">
+                Please have your digital or physical token ready before approaching the station. Mask-wearing is optional but encouraged.
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="w-full py-4 px-8 border-t border-zinc-200/10 bg-zinc-100 flex flex-row justify-between items-center">
+        <div className="flex gap-6 items-center">
+          <span className="text-[10px] uppercase tracking-widest font-bold text-zinc-400">© {new Date().getFullYear()} SmartQ Hospital Systems. HIPAA Compliant Interface.</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col items-end">
+            <span className="text-[10px] uppercase font-bold text-primary">Current Time</span>
+            <span className="text-sm font-black text-on-surface">{fmt(time)}</span>
+          </div>
+          <div className="h-8 w-px bg-outline-variant/30" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-on-surface">{hospitalName || 'Central Medical Hub'}</span>
+        </div>
+      </footer>
+
+      {/* Emergency FAB */}
+      <div className="fixed bottom-8 left-8 z-50">
+        <div className="bg-primary text-on-primary p-4 rounded-2xl shadow-2xl flex items-center gap-3 pr-8">
+          <div className="bg-on-primary/20 p-2 rounded-xl">
+            <Zap size={20} />
+          </div>
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-tighter leading-none">Emergency</div>
+            <div className="text-xl font-black leading-none tracking-tight">Level 01 Active</div>
           </div>
         </div>
       </div>

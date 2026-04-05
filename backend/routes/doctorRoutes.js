@@ -3,7 +3,7 @@ const ctrl = require('../controllers/doctorController');
 const { protect } = require('../middleware/authMiddleware');
 const { authorize, tenantFilter } = require('../middleware/rbacMiddleware');
 
-router.use(protect, authorize('super-admin', 'hospital-admin', 'staff', 'doctor'), tenantFilter);
+router.use(protect, authorize('super-admin', 'hospital-admin', 'staff', 'doctor', 'patient'), tenantFilter);
 
 router.get('/', ctrl.getAll);
 router.get('/:id', ctrl.getOne);

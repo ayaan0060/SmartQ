@@ -60,12 +60,13 @@ const DisplayBoard       = lazyWithRetry(() => import('./pages/DisplayBoard'));
 const DoctorPortal       = lazyWithRetry(() => import('./pages/DoctorPortal'));
 const AppointmentBooking = lazyWithRetry(() => import('./pages/AppointmentBooking'));
 const MyAppointments     = lazyWithRetry(() => import('./pages/MyAppointments'));
+const PatientQueue       = lazyWithRetry(() => import('./pages/PatientQueue'));
 
 const LoadingFallback = () => (
-  <div className="flex min-h-screen items-center justify-center" style={{ background: '#0B0F19' }}>
+  <div className="flex min-h-screen items-center justify-center bg-background">
     <div className="flex flex-col items-center gap-4">
-      <div className="h-10 w-10 animate-spin rounded-full border-2 border-t-transparent" style={{ borderColor: '#3B82F6', borderTopColor: 'transparent' }} />
-      <p className="text-sm" style={{ color: '#6B7280' }}>Loading SmartQ...</p>
+      <div className="h-10 w-10 animate-spin rounded-full border-2 border-t-transparent border-primary" />
+      <p className="text-sm text-secondary">Loading SmartQ...</p>
     </div>
   </div>
 );
@@ -94,6 +95,7 @@ function AppContent() {
         <Route path="/doctor" element={<ProtectedRoute><DoctorPortal /></ProtectedRoute>} />
         <Route path="/book-appointment" element={<ProtectedRoute><AppointmentBooking /></ProtectedRoute>} />
         <Route path="/appointments" element={<ProtectedRoute><MyAppointments /></ProtectedRoute>} />
+        <Route path="/queue" element={<ProtectedRoute requireHospital><PatientQueue /></ProtectedRoute>} />
 
         {/* ── Admin Panel Routes ─────────────── */}
         <Route
@@ -145,16 +147,16 @@ function App() {
           toastOptions={{
             duration: 4000,
             style: {
-              borderRadius: '10px',
+              borderRadius: '1rem',
               padding: '12px 16px',
-              background: '#1F2937',
-              color: '#F9FAFB',
-              border: '1px solid #374151',
+              background: '#ffffff',
+              color: '#1a1c1c',
+              border: '1px solid #e4bdbb',
               fontSize: '13px',
               fontWeight: '500',
             },
-            success: { iconTheme: { primary: '#10B981', secondary: '#1F2937' } },
-            error:   { iconTheme: { primary: '#EF4444', secondary: '#1F2937' } },
+            success: { iconTheme: { primary: '#15803d', secondary: '#ffffff' } },
+            error:   { iconTheme: { primary: '#ba1a1a', secondary: '#ffffff' } },
           }}
         />
         <ErrorBoundary>

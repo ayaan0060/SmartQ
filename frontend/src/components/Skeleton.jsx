@@ -5,7 +5,7 @@ const Skeleton = ({ className, ...props }) => {
   return (
     <div
       className={cn(
-        'animate-pulse rounded-xl bg-slate-200',
+        'animate-pulse rounded-xl bg-surface-container',
         className
       )}
       aria-hidden="true"

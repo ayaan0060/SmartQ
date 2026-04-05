@@ -1,143 +1,139 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-// eslint-disable-next-line no-unused-vars
-import { motion, useReducedMotion } from 'framer-motion';
-import { CreditCard, Building, Calendar, CheckCircle2, Clock, Ticket, IndianRupee } from 'lucide-react';
-import { staggerContainer, fadeUp } from '../utils/motion';
-
+import { CreditCard, Download, Eye, Clock, Shield, ShieldCheck } from 'lucide-react';
 import api from '../lib/api';
 import PageLayout from '../layouts/PageLayout';
-import Card from '../components/Card';
-import Badge from '../components/Badge';
 import Skeleton from '../components/Skeleton';
 
-const PaymentHistory = () => {
+// TODO: Replace with real outstanding balance from API
+const MOCK_BALANCE = { amount: '$1,240.50', dueDays: 12 };
+
+export default function PaymentHistory() {
   const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const shouldReduceMotion = useReducedMotion();
+  const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
-    const fetchPayments = async () => {
-      try {
-        const res = await api.get('/payments/history');
-        setPayments(res.data?.data ?? []);
-      } catch {
-        toast.error('Failed to load payment history');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPayments();
+    api.get('/payments/history')
+      .then(r => setPayments(r.data?.data ?? []))
+      .catch(() => toast.error('Failed to load payment history'))
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) {
     return (
-      <PageLayout className="space-y-8 pb-12">
-        <div className="flex items-center gap-4 mb-8">
-          <Skeleton className="h-16 w-16 rounded-3xl" />
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-48 rounded-lg" />
-            <Skeleton className="h-4 w-64 rounded-lg" />
-          </div>
-        </div>
+      <PageLayout>
         <div className="space-y-4">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-3xl" />)}
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
         </div>
       </PageLayout>
     );
   }
 
   return (
-    <PageLayout className="max-w-4xl mx-auto space-y-10 pb-12">
-      <header className="flex items-center gap-6 px-2">
-        <div className="h-16 w-16 flex items-center justify-center rounded-3xl bg-slate-900 text-white shadow-xl shadow-slate-200">
-          <CreditCard size={30} />
+    <PageLayout>
+      {/* Header */}
+      <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <span className="text-[10px] uppercase tracking-widest font-bold text-primary mb-2 block">Patient Financial Portal</span>
+          <h1 className="text-4xl font-extrabold tracking-tight text-on-surface">Payment History</h1>
+          <p className="text-zinc-500 mt-2 max-w-xl">Review and manage your clinical service invoices. Access detailed breakdowns of hospital visits and diagnostic procedures.</p>
         </div>
-        <div className="space-y-1">
-          <h1 className="text-4xl font-black tracking-tight text-slate-900 font-display">Payment History</h1>
-          <p className="text-slate-500 font-medium">All your past transactions in one place.</p>
+        <div className="flex gap-3">
+          <button className="px-5 py-2.5 bg-surface-container-highest rounded-2xl text-sm font-semibold flex items-center gap-2 hover:bg-surface-container transition-colors text-on-surface">
+            Filter
+          </button>
+          <button className="px-5 py-2.5 bg-primary text-on-primary rounded-2xl text-sm font-bold shadow-md hover:bg-primary-container transition-colors flex items-center gap-2">
+            <Download size={16} /> Export All
+          </button>
         </div>
       </header>
 
-      <div className="space-y-4">
-        {payments.length === 0 ? (
-          <Card className="p-16 text-center flex flex-col items-center justify-center border-none bg-white shadow-premium rounded-4xl">
-            <div className="h-24 w-24 rounded-full bg-slate-50 flex items-center justify-center text-slate-200 mb-8">
-              <Ticket size={48} />
+      {/* Bento summary */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8">
+        <div className="md:col-span-4 bg-surface-container-low rounded-2xl p-8 flex flex-col justify-between min-h-[240px]">
+          <div>
+            <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">Outstanding Balance</h3>
+            <div className="text-5xl font-black tracking-tight text-on-surface">{MOCK_BALANCE.amount}</div>
+          </div>
+          <div className="flex items-center gap-2 text-primary font-bold text-sm">
+            <Clock size={16} />
+            Due in {MOCK_BALANCE.dueDays} days
+          </div>
+        </div>
+
+        <div className="md:col-span-8 bg-zinc-900 rounded-2xl p-8 text-white flex flex-col justify-between relative overflow-hidden">
+          <div className="relative z-10">
+            <h3 className="text-zinc-400 text-xs font-bold uppercase tracking-widest mb-1">Premium Health Plan</h3>
+            <div className="text-2xl font-bold mb-4">Metropolitan General Center</div>
+            <p className="text-zinc-400 text-sm max-w-md">Your active plan covers 85% of inpatient costs and 100% of emergency diagnostic imaging.</p>
+          </div>
+          <div className="relative z-10 flex gap-4 mt-6">
+            <div className="h-12 w-12 bg-white/10 rounded-xl flex items-center justify-center">
+              <Shield size={20} className="text-white" />
             </div>
-            <h3 className="text-2xl font-bold text-slate-900 font-display">No payments yet</h3>
-            <p className="text-slate-500 max-w-xs mt-3 font-medium">You haven't made any payments. Book a paid service to get started.</p>
-            <Link
-              to="/dashboard"
-              className="mt-10 px-10 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/25 hover:scale-105 transition-transform"
-            >
-              Book a Service
-            </Link>
-          </Card>
+            <div className="h-12 w-12 bg-white/10 rounded-xl flex items-center justify-center">
+              <ShieldCheck size={20} className="text-white" />
+            </div>
+          </div>
+          <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-primary/20 to-transparent" />
+        </div>
+      </div>
+
+      {/* Invoice list */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-2 mb-2">
+          <h2 className="text-lg font-bold text-on-surface">Recent Invoices</h2>
+          <span className="text-sm text-zinc-400">Showing {payments.length} records</span>
+        </div>
+
+        {payments.length === 0 ? (
+          <div className="text-center py-24">
+            <CreditCard size={64} className="mx-auto text-outline-variant mb-4" />
+            <h3 className="text-2xl font-black text-on-surface">No payments yet</h3>
+            <p className="text-secondary mt-2">Your payment history will appear here after your first transaction.</p>
+          </div>
         ) : (
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 gap-4"
-          >
-            {payments.map((payment) => (
-              <motion.div key={payment._id} variants={shouldReduceMotion ? {} : fadeUp}>
-                <Card className="flex flex-col md:flex-row md:items-center justify-between p-6 md:p-8 border-none bg-white shadow-premium hover:shadow-2xl hover:scale-[1.01] transition-all rounded-3xl">
-                  {/* Left section */}
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-                    {/* Amount bubble */}
-                    <div className="h-16 w-16 shrink-0 rounded-2xl bg-primary/5 text-primary flex flex-col items-center justify-center">
-                      <IndianRupee size={14} strokeWidth={3} className="opacity-60" />
-                      <span className="text-xl font-black leading-none font-display">{payment.amount}</span>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <Building size={13} className="text-primary" />
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                          {payment.hospitalId?.name || 'Hospital'}
-                        </span>
-                      </div>
-                      <h4 className="text-xl font-bold text-slate-900">{payment.serviceId?.name || 'Service'}</h4>
-                      <div className="flex items-center gap-4 text-xs font-bold text-slate-400">
-                        <span className="flex items-center gap-1.5">
-                          <Calendar size={12} />
-                          {format(new Date(payment.createdAt), 'MMM dd, yyyy')}
-                        </span>
-                        <div className="h-1 w-1 rounded-full bg-slate-200" />
-                        <span className="flex items-center gap-1.5">
-                          <Clock size={12} />
-                          {format(new Date(payment.createdAt), 'hh:mm a')}
-                        </span>
-                      </div>
-                    </div>
+          payments.map(payment => (
+            <motion.div
+              key={payment._id}
+              whileHover={{ boxShadow: '0 8px 24px rgba(26,28,28,0.08)' }}
+              className={`bg-surface-container-lowest rounded-2xl p-6 group flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden ${payment.status === 'paid' ? 'border-l-4 border-primary' : 'border-l-4 border-zinc-200'}`}
+            >
+              <div className="flex items-start gap-6">
+                <div className={`h-14 w-14 rounded-2xl bg-surface-container flex items-center justify-center group-hover:scale-110 transition-transform ${payment.status === 'paid' ? 'text-primary' : 'text-zinc-400'}`}>
+                  <CreditCard size={28} />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">
+                    Inv #{payment.orderId?.slice(-6) || '------'} • {format(new Date(payment.createdAt), 'MMM dd, yyyy')}
                   </div>
+                  <h4 className="text-lg font-bold text-on-surface">{payment.serviceId?.name || 'Medical Service'}</h4>
+                  <p className="text-sm text-zinc-500">{payment.hospitalId?.name || 'Hospital'}</p>
+                </div>
+              </div>
 
-                  {/* Right section */}
-                  <div className="mt-6 md:mt-0 flex items-center justify-between md:justify-end gap-6 border-t border-slate-50 pt-6 md:border-0 md:pt-0">
-                    <div className="text-right">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Order ID</p>
-                      <p className="font-mono text-xs text-slate-500 font-bold">{payment.orderId}</p>
-                    </div>
-                    <Badge
-                      variant={payment.status === 'paid' ? 'success' : payment.status === 'failed' ? 'error' : 'warning'}
-                      className="flex items-center gap-1.5"
-                    >
-                      {payment.status === 'paid' && <CheckCircle2 size={12} />}
-                      {payment.status.toUpperCase()}
-                    </Badge>
+              <div className="flex items-center gap-8 md:gap-12">
+                <div className="text-right">
+                  <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Total Amount</div>
+                  <div className={`text-2xl font-black ${payment.status === 'paid' ? 'text-on-surface' : 'text-zinc-400'}`}>
+                    ₹{payment.amount}
                   </div>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
+                </div>
+                <div className="flex gap-2">
+                  <button className="p-3 rounded-2xl bg-secondary-container text-on-secondary-container hover:bg-zinc-200 transition-colors">
+                    <Eye size={18} />
+                  </button>
+                  <button className="px-6 py-3 bg-primary text-on-primary rounded-2xl font-bold flex items-center gap-2 hover:bg-primary-container transition-colors shadow-lg shadow-primary/10">
+                    <Download size={16} /> Download
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ))
         )}
       </div>
     </PageLayout>
   );
-};
-
-export default PaymentHistory;
+}

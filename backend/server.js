@@ -197,6 +197,20 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Smart Queue: department-level rooms
+  socket.on('join:department', ({ hospitalId, serviceId }) => {
+    if (hospitalId && serviceId) {
+      socket.join(`dept:${hospitalId}:${serviceId}`);
+      console.log(`↳ Joined department room: ${hospitalId}:${serviceId}`);
+    }
+  });
+
+  socket.on('leave:department', ({ hospitalId, serviceId }) => {
+    if (hospitalId && serviceId) {
+      socket.leave(`dept:${hospitalId}:${serviceId}`);
+    }
+  });
+
   // ── Dispatch relay: driver status updates ──────────────────────────────────
   // Driver emits this when they tap En Route / Arriving / Arrived buttons.
   // Server relays to the patient's emergency room + admin hospital room.

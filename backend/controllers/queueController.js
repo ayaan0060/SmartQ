@@ -2,6 +2,7 @@ const Token   = require('../models/Token');
 const Service  = require('../models/Service');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { success, error } = require('../utils/apiResponse');
+const { logConsultation, recalculateQueue } = require('../utils/queueCalculator');
 
 const emitQueueUpdate = (req, hospitalId, event, data) => {
   const io = req.app.locals.io;
@@ -226,6 +227,16 @@ const addToken = asyncHandler(async (req, res) => {
   const populated = await token.populate('serviceId', 'name');
 
   emitQueueUpdate(req, hospitalId, 'queue:add', populated);
+
+  // Smart Queue: recalculate wait times after adding a token
+  const io = req.app.locals.io;
+  recalculateQueue({
+    hospitalId,
+    doctorId:  req.body.doctorId || null,
+    serviceId: req.body.serviceId,
+    io,
+  }).catch(err => console.error('[SmartQ] Recalculate after add failed:', err.message));
+
   return success(res, { token: populated }, 201, 'Token added to queue');
 });
 
@@ -261,6 +272,21 @@ const updateToken = asyncHandler(async (req, res) => {
 
   const io = req.app.locals.io;
   if (['completed', 'skipped'].includes(status)) {
+    // Smart Queue: log consultation and recalculate
+    if (status === 'completed') {
+      logConsultation(token, io).catch(err =>
+        console.error('[SmartQ] Log consultation failed:', err.message)
+      );
+    } else {
+      // skipped — still recalculate
+      recalculateQueue({
+        hospitalId: token.hospitalId,
+        doctorId:   token.doctorId || null,
+        serviceId:  token.serviceId,
+        io,
+      }).catch(err => console.error('[SmartQ] Recalculate after skip failed:', err.message));
+    }
+
     if (io) {
       io.to(`token:${token._id}`).emit('token:done', {
         status,
@@ -277,6 +303,13 @@ const updateToken = asyncHandler(async (req, res) => {
       tokenNumber: token.tokenNumber,
       message: 'Your turn has come! Please proceed to the counter.',
     });
+    // Recalculate on status change to in-progress too
+    recalculateQueue({
+      hospitalId: token.hospitalId,
+      doctorId:   token.doctorId || null,
+      serviceId:  token.serviceId,
+      io,
+    }).catch(err => console.error('[SmartQ] Recalculate after call failed:', err.message));
   }
 
   return success(res, { token }, 200, 'Queue updated');
@@ -289,6 +322,16 @@ const removeToken = asyncHandler(async (req, res) => {
   if (!token) return error(res, 'Token not found', 404);
 
   emitQueueUpdate(req, token.hospitalId, 'queue:remove', { _id: token._id });
+
+  // Smart Queue: recalculate after removal
+  const io = req.app.locals.io;
+  recalculateQueue({
+    hospitalId: token.hospitalId,
+    doctorId:   token.doctorId || null,
+    serviceId:  token.serviceId,
+    io,
+  }).catch(err => console.error('[SmartQ] Recalculate after remove failed:', err.message));
+
   return success(res, {}, 200, 'Token removed from queue');
 });
 
@@ -386,7 +429,81 @@ const getHospitalQueueStats = asyncHandler(async (req, res) => {
   return success(res, { safety, avgWait, waitingCount: waiting.length });
 });
 
+// ── GET /api/queue/my-status — patient's own active queue position ────────────
+const getMyQueueStatus = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  // Find patient's active token (waiting or in-progress)
+  const myToken = await Token.findOne({
+    userId,
+    status: { $in: ['waiting', 'in-progress'] },
+    createdAt: { $gte: todayStart },
+  })
+    .populate('serviceId', 'name avgTime')
+    .populate('hospitalId', 'name')
+    .lean();
+
+  if (!myToken) {
+    return success(res, {
+      position: null,
+      estimatedWaitTime: null,
+      predictedTurnTime: null,
+      arrivalSuggestion: null,
+      totalWaiting: 0,
+      patientsAhead: 0,
+      tokenNumber: null,
+      serviceName: null,
+      hospitalName: null,
+    });
+  }
+
+  // Get all waiting tokens for the same service/hospital today
+  const allWaiting = await Token.find({
+    hospitalId: myToken.hospitalId._id || myToken.hospitalId,
+    serviceId: myToken.serviceId._id || myToken.serviceId,
+    status: 'waiting',
+    createdAt: { $gte: todayStart },
+  }).sort({ createdAt: 1 }).lean();
+
+  // Find patient's position
+  const myIndex = allWaiting.findIndex(t => t._id.toString() === myToken._id.toString());
+  const position = myToken.status === 'in-progress' ? 0 : (myIndex >= 0 ? myIndex + 1 : allWaiting.length);
+  const patientsAhead = Math.max(0, position - 1);
+
+  // Calculate estimated wait time
+  const avgTime = myToken.serviceId?.avgTime || await getRealAvgTime(
+    myToken.serviceId._id || myToken.serviceId,
+    DEFAULT_WAIT
+  );
+  const estimatedWaitTime = myToken.status === 'in-progress' ? 0 : patientsAhead * avgTime;
+
+  // Predicted turn time
+  const now = new Date();
+  const predictedTurnTime = new Date(now.getTime() + estimatedWaitTime * 60000);
+
+  // Arrival suggestion (arrive 15 mins before turn)
+  const TRAVEL_BUFFER = 15;
+  const arrivalTime = new Date(now.getTime() + Math.max(0, estimatedWaitTime - TRAVEL_BUFFER) * 60000);
+  const arrivalSuggestion = arrivalTime > now ? arrivalTime : now;
+
+  return success(res, {
+    position,
+    estimatedWaitTime: Math.max(0, estimatedWaitTime),
+    predictedTurnTime,
+    arrivalSuggestion,
+    totalWaiting: allWaiting.length,
+    patientsAhead,
+    tokenNumber: myToken.tokenNumber,
+    serviceName: myToken.serviceId?.name || 'General',
+    hospitalName: myToken.hospitalId?.name || 'Hospital',
+    status: myToken.status,
+  });
+});
+
 module.exports = {
   getQueue, getHistory, getPatientVisits, addToken, updateToken,
   removeToken, getDisplayQueue, getDoctorQueue, getHospitalQueueStats,
+  getMyQueueStatus,
 };

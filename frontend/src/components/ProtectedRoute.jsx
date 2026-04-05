@@ -7,19 +7,17 @@ import { Shield } from 'lucide-react';
 const ADMIN_ROLES = ['super-admin', 'hospital-admin', 'staff', 'receptionist', 'doctor', 'admin'];
 
 const PendingScreen = () => (
-  <div className="min-h-screen flex items-center justify-center" style={{ background: '#0B0F19' }}>
+  <div className="min-h-screen flex items-center justify-center bg-background">
     <div className="text-center space-y-4 max-w-md px-6">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl mx-auto"
-        style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)' }}>
-        <Shield size={32} style={{ color: '#F59E0B' }} />
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl mx-auto bg-amber-50 border border-amber-200">
+        <Shield size={32} className="text-amber-600" />
       </div>
-      <h2 className="text-xl font-bold text-white">Registration Under Review</h2>
-      <p className="text-sm" style={{ color: '#94A3B8' }}>
+      <h2 className="text-xl font-bold text-on-surface">Registration Under Review</h2>
+      <p className="text-sm text-secondary">
         Your hospital registration is pending approval by our team. You'll be able to access the admin panel once approved (within 24–48 hours).
       </p>
       <button onClick={() => { useAuthStore.getState().logout(); window.location.href = '/login'; }}
-        className="rounded-xl px-6 py-2.5 text-sm font-semibold text-white"
-        style={{ background: '#1E293B' }}>
+        className="rounded-xl px-6 py-2.5 text-sm font-semibold text-on-surface bg-surface-container hover:bg-surface-container-high transition-colors">
         Back to Login
       </button>
     </div>

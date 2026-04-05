@@ -10,6 +10,9 @@ router.get('/stats/:hospitalId',   ctrl.getHospitalQueueStats);
 // All other queue routes require auth + tenant scoping
 router.use(protect, tenantFilter);
 
+// Patient's own queue status
+router.get('/my-status', authorize('patient', 'super-admin', 'hospital-admin', 'staff'), ctrl.getMyQueueStatus);
+
 // Doctor's own queue
 router.get('/doctor', authorize('doctor'), ctrl.getDoctorQueue);
 

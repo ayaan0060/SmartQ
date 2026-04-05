@@ -25,7 +25,16 @@ const TokenSchema = new mongoose.Schema({
   servedAt:        { type: Date, default: null },
   completedAt:     { type: Date, default: null },
   waitTime:        { type: Number, default: null }, // actual wait in minutes
-  paymentId:       { type: mongoose.Schema.Types.ObjectId, ref: 'Payment', default: null }
+  paymentId:       { type: mongoose.Schema.Types.ObjectId, ref: 'Payment', default: null },
+  // Smart Queue fields
+  patientType: {
+    type: String,
+    enum: ['new', 'follow-up', 'emergency', 'standard'],
+    default: 'standard',
+  },
+  estimatedWaitTime:   { type: Number, default: null },   // calculated wait in minutes
+  predictedTurnTime:   { type: Date, default: null },     // when patient's turn will come
+  arrivalSuggestion:   { type: Date, default: null },     // when patient should arrive
 }, { timestamps: true });
 
 // Index for fast hospital+status queries

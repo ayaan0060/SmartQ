@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Plus, Briefcase, Stethoscope, UserPlus, X } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Plus, Briefcase, Stethoscope, UserPlus, X, Edit, MoreVertical } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import StaffFilterBar from '../../components/staff/StaffFilterBar';
-import StaffDirectoryTable from '../../components/staff/StaffDirectoryTable';
 import StaffPersonnelModal from '../../components/staff/StaffPersonnelModal';
 import StaffDoctorModal from '../../components/staff/StaffDoctorModal';
 import { useStaffDirectory } from '../../features/staff/useStaffDirectory';
@@ -25,40 +25,27 @@ export default function StaffPage() {
   const [doctorAccountLoading, setDoctorAccountLoading] = useState(false);
 
   useEffect(() => {
-    const valid = STAFF_ROLE_FILTERS.some((x) => x.id === roleParam);
+    const valid = STAFF_ROLE_FILTERS.some(x => x.id === roleParam);
     if (valid) setRoleFilter(roleParam);
   }, [roleParam]);
-
-  const roleCounts = data?.roleCounts || {};
-  const partialLoad = data?.partialLoad;
-  const loadWarnings = data?.loadWarnings || [];
 
   const filtered = useMemo(() => {
     const list = data?.staff || [];
     if (roleFilter === 'all') return list;
-    return list.filter((s) => s.role === roleFilter);
+    return list.filter(s => s.role === roleFilter);
   }, [data?.staff, roleFilter]);
-
-  const errorMessage = isError
-    ? (error?.displayMessage || error?.message || 'Could not load staff directory.')
-    : null;
-
-  const openCreatePersonnel = () => setPersonnelModal({ open: true, mode: 'create', row: null });
-  const openCreateDoctor = () => setDoctorModal({ open: true, mode: 'create', row: null });
 
   const handleCreateReceptionist = async (e) => {
     e.preventDefault();
     setReceptionistLoading(true);
     try {
       await api.post('/auth/register-receptionist', receptionistForm);
-      toast.success('Receptionist account created! They can now log in.');
+      toast.success('Receptionist account created!');
       setReceptionistModal(false);
       setReceptionistForm({ name: '', email: '', password: '' });
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to create receptionist');
-    } finally {
-      setReceptionistLoading(false);
-    }
+    } finally { setReceptionistLoading(false); }
   };
 
   const handleCreateDoctorAccount = async (e) => {
@@ -66,137 +53,206 @@ export default function StaffPage() {
     setDoctorAccountLoading(true);
     try {
       await api.post('/auth/register-doctor', doctorAccountForm);
-      toast.success('Doctor account created! They can now log in at /login.');
+      toast.success('Doctor account created!');
       setDoctorAccountModal(false);
       setDoctorAccountForm({ name: '', email: '', password: '', doctorId: '' });
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to create doctor account');
-    } finally {
-      setDoctorAccountLoading(false);
-    }
+    } finally { setDoctorAccountLoading(false); }
   };
 
   const handleToggleDoctorAvailability = async (row) => {
     if (!row?._id) return;
-    try {
-      await api.patch(`/doctors/${row._id}/availability`);
-      toast.success('Availability updated');
-      refetch();
-    } catch (e) {
-      toast.error(e.displayMessage || 'Failed to update availability');
-    }
+    try { await api.patch(`/doctors/${row._id}/availability`); toast.success('Availability updated'); refetch(); }
+    catch (e) { toast.error(e.displayMessage || 'Failed to update availability'); }
   };
 
   const handleDeleteDoctor = async (row) => {
     if (!row?._id) return;
-    if (!window.confirm(`Remove ${row.name} from the hospital? This cannot be undone.`)) return;
-    try {
-      await api.delete(`/doctors/${row._id}`);
-      toast.success('Doctor removed');
-      refetch();
-    } catch (e) {
-      toast.error(e.displayMessage || 'Failed to delete doctor');
-    }
+    if (!window.confirm(`Remove ${row.name} from the hospital?`)) return;
+    try { await api.delete(`/doctors/${row._id}`); toast.success('Doctor removed'); refetch(); }
+    catch (e) { toast.error(e.displayMessage || 'Failed to delete doctor'); }
   };
 
-  const handleDeactivatePersonnel = async (row) => {
-    if (!row?._id || !row.isActive) return;
-    if (!window.confirm(`Deactivate ${row.name}?`)) return;
-    try {
-      await api.patch(`/staff/${row._id}`, { isActive: false });
-      toast.success('Staff member deactivated');
-      refetch();
-    } catch (e) {
-      toast.error(e.displayMessage || 'Failed to deactivate');
-    }
+  const inputCls = 'w-full rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none bg-surface-container-highest border-none focus:ring-2 focus:ring-primary/20 transition-all';
+
+  const getStatusColor = (staff) => {
+    if (staff.isAvailable === true || staff.isActive === true) return 'bg-emerald-500';
+    if (staff.isAvailable === false || staff.isActive === false) return 'bg-zinc-400';
+    return 'bg-emerald-500';
   };
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-end mb-10">
         <div>
-          <div className="flex items-center gap-2">
-            <div
-              className="flex h-9 w-9 items-center justify-center rounded-xl"
-              style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)' }}
-            >
-              <Briefcase size={18} className="text-blue-400" />
-            </div>
-            <div>
-              <h1 className="font-display text-xl font-bold text-white">Staff</h1>
-              <p className="text-sm mt-0.5" style={{ color: '#9CA3AF' }}>
-                Doctors, nurses, drivers, and the full team — one directory. Use the role filters to focus
-                on a group.
-              </p>
-            </div>
-          </div>
+          <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-primary mb-2">Personnel Directory</p>
+          <h1 className="text-4xl font-extrabold tracking-tight text-on-surface">Staff Management</h1>
+          <p className="text-zinc-500 mt-2 max-w-md text-sm">Orchestrate clinical excellence across departments with real-time status tracking and privilege control.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <button type="button" className="btn btn-secondary" onClick={openCreateDoctor}>
-            <Stethoscope size={16} /> Add doctor
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setPersonnelModal({ open: true, mode: 'create', row: null })}
+          className="flex items-center gap-2 bg-on-surface text-surface px-6 py-3 rounded-2xl font-bold text-sm hover:opacity-90 transition-opacity"
+        >
+          <UserPlus size={18} /> Add New Staff
+        </motion.button>
+      </div>
+
+      {/* Filter bar */}
+      <div className="bg-surface-container-low p-2 rounded-2xl flex flex-wrap items-center gap-2 mb-8 border border-zinc-200/5">
+        <div className="flex-1 min-w-[240px] flex items-center px-4 py-2 gap-3 bg-surface-container-lowest rounded-xl border border-outline-variant/10 focus-within:ring-2 ring-primary/20 transition-all">
+          <input
+            className="bg-transparent border-none focus:ring-0 text-sm w-full text-on-surface outline-none placeholder:text-secondary"
+            placeholder="Filter by name, ID, or specialty..."
+            type="text"
+          />
+        </div>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setDoctorModal({ open: true, mode: 'create', row: null })} className="btn btn-secondary text-xs">
+            <Stethoscope size={14} /> Add Doctor
           </button>
-          <button type="button" className="btn btn-secondary" onClick={() => setDoctorAccountModal(true)}>
-            <Stethoscope size={16} /> Doctor Login
+          <button type="button" onClick={() => setDoctorAccountModal(true)} className="btn btn-secondary text-xs">
+            <Stethoscope size={14} /> Doctor Login
           </button>
-          <button type="button" className="btn btn-secondary" onClick={() => setReceptionistModal(true)}>
-            <UserPlus size={16} /> Add receptionist
-          </button>
-          <button type="button" className="btn btn-primary" onClick={openCreatePersonnel}>
-            <Plus size={16} /> Add staff
+          <button type="button" onClick={() => setReceptionistModal(true)} className="btn btn-secondary text-xs">
+            <UserPlus size={14} /> Add Receptionist
           </button>
         </div>
       </div>
 
-      {partialLoad && (
-        <div
-          className="rounded-xl px-4 py-3 text-sm"
-          style={{
-            background: 'rgba(245,158,11,0.08)',
-            border: '1px solid rgba(245,158,11,0.25)',
-            color: '#FCD34D',
-          }}
-        >
-          {loadWarnings.includes('personnel') && loadWarnings.includes('doctors')
-            ? 'Could not refresh all sources; showing what could be loaded.'
-            : loadWarnings.includes('personnel')
-              ? 'Other staff (nurses, drivers, …) could not be loaded. Doctors are still shown when available.'
-              : 'Could not load the Doctors API; doctor rows may come from the staff export only.'}
-          <button
-            type="button"
-            className="ml-2 font-semibold underline-offset-2 hover:underline"
-            onClick={() => refetch()}
+      {/* Role filter */}
+      <div className="bg-surface-container-low rounded-2xl p-4 mb-6">
+        <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 mb-3">Filter by role</p>
+        <StaffFilterBar active={roleFilter} onChange={setRoleFilter} roleCounts={data?.roleCounts || {}} />
+      </div>
+
+      {/* Staff bento grid */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="h-64 rounded-2xl animate-pulse bg-surface-container" />
+          ))}
+        </div>
+      ) : isError ? (
+        <div className="text-center py-12 text-error">{error?.displayMessage || 'Failed to load staff'}</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filtered.map(staff => {
+            const isOnline = staff.isAvailable !== false && staff.isActive !== false;
+            const isPrimary = staff._type === 'doctor' || staff.specialization;
+            return (
+              <motion.div
+                key={staff._id}
+                whileHover={{ boxShadow: '0 4px 16px rgba(26,28,28,0.08)' }}
+                className={`bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm relative ${isPrimary ? 'border-l-4 border-primary' : ''} ${!isOnline ? 'opacity-80' : ''}`}
+              >
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="relative">
+                      <div className={`w-16 h-16 rounded-2xl overflow-hidden bg-surface-container flex items-center justify-center text-2xl font-black text-on-primary bg-primary ${!isOnline ? 'grayscale' : ''}`}>
+                        {staff.name?.charAt(0)?.toUpperCase() || '?'}
+                      </div>
+                      <span className={`absolute -bottom-1 -right-1 w-4 h-4 border-2 border-surface-container-lowest rounded-full ${getStatusColor(staff)}`} />
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => isPrimary ? setDoctorModal({ open: true, mode: 'edit', row: staff }) : setPersonnelModal({ open: true, mode: 'edit', row: staff })}
+                        className="p-1.5 text-zinc-400 hover:text-primary transition-colors"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button className="p-1.5 text-zinc-400 hover:text-primary transition-colors">
+                        <MoreVertical size={16} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <h3 className="font-bold text-on-surface">{staff.name}</h3>
+                    <p className={`text-xs font-bold uppercase tracking-widest mt-1 ${isPrimary ? 'text-primary' : 'text-zinc-600'}`}>
+                      {staff.specialization || staff.role || 'Staff'}
+                    </p>
+                    <p className="text-xs text-zinc-500 mt-0.5">Department: {staff.department || 'General'}</p>
+                  </div>
+
+                  <div className="flex items-center justify-between py-3 border-t border-zinc-100">
+                    {isPrimary ? (
+                      <>
+                        <div className="text-center">
+                          <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-tighter">Patients</p>
+                          <p className="font-bold text-on-surface">{staff.currentPatients || '—'}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-tighter">Fee</p>
+                          <p className="font-bold text-on-surface">₹{staff.consultationFee || '—'}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-tighter">Status</p>
+                          <p className={`font-bold text-xs ${isOnline ? 'text-green-600' : 'text-zinc-400'}`}>{isOnline ? 'Online' : 'Offline'}</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-center">
+                          <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-tighter">Role</p>
+                          <p className="font-bold text-on-surface text-xs">{staff.role}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-tighter">Status</p>
+                          <p className={`font-bold text-xs ${isOnline ? 'text-green-600' : 'text-zinc-400'}`}>{isOnline ? 'Active' : 'Inactive'}</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex gap-2">
+                    <button className="flex-1 bg-surface-container-high text-zinc-700 py-2 rounded-xl text-xs font-bold hover:bg-zinc-200 transition-colors">
+                      Message
+                    </button>
+                    {isPrimary ? (
+                      <button
+                        onClick={() => handleToggleDoctorAvailability(staff)}
+                        className="flex-1 bg-primary text-on-primary py-2 rounded-xl text-xs font-bold shadow-sm shadow-primary/10"
+                      >
+                        {staff.isAvailable ? 'Set Unavailable' : 'Set Available'}
+                      </button>
+                    ) : (
+                      <button className="flex-1 bg-secondary-container text-on-secondary-container py-2 rounded-xl text-xs font-bold">
+                        Shift Schedule
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+
+          {/* Add new placeholder */}
+          <motion.div
+            whileHover={{ borderColor: 'rgba(165, 0, 27, 0.4)' }}
+            onClick={() => setPersonnelModal({ open: true, mode: 'create', row: null })}
+            className="border-2 border-dashed border-zinc-200 rounded-2xl flex flex-col items-center justify-center p-6 text-center group cursor-pointer transition-colors"
           >
-            Retry
-          </button>
+            <div className="w-12 h-12 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 group-hover:text-primary transition-colors mb-3">
+              <Plus size={24} />
+            </div>
+            <p className="font-bold text-sm text-zinc-400 group-hover:text-primary transition-colors">Register Personnel</p>
+            <p className="text-[10px] text-zinc-400 mt-1">Add details for new onboarding staff members.</p>
+          </motion.div>
         </div>
       )}
 
-      <div className="card p-4 space-y-3">
-        <p className="text-xs font-bold uppercase tracking-wide" style={{ color: '#64748B' }}>
-          Filter by role
-        </p>
-        <StaffFilterBar active={roleFilter} onChange={setRoleFilter} roleCounts={roleCounts} />
-      </div>
-
-      <StaffDirectoryTable
-        rows={filtered}
-        loading={isLoading}
-        errorMessage={errorMessage}
-        onEditDoctor={(row) => setDoctorModal({ open: true, mode: 'edit', row })}
-        onEditPersonnel={(row) => setPersonnelModal({ open: true, mode: 'edit', row })}
-        onToggleDoctorAvailability={handleToggleDoctorAvailability}
-        onDeleteDoctor={handleDeleteDoctor}
-        onDeactivatePersonnel={handleDeactivatePersonnel}
-      />
-
+      {/* Modals */}
       <StaffPersonnelModal
         open={personnelModal.open}
         mode={personnelModal.mode}
         initial={personnelModal.row}
-        onClose={() => setPersonnelModal((m) => ({ ...m, open: false }))}
+        onClose={() => setPersonnelModal(m => ({ ...m, open: false }))}
         onSaved={() => refetch()}
       />
-
       <StaffDoctorModal
         open={doctorModal.open}
         mode={doctorModal.mode}
@@ -205,42 +261,29 @@ export default function StaffPage() {
         onSaved={() => refetch()}
       />
 
-      {/* Receptionist Account Modal */}
+      {/* Receptionist modal */}
       {receptionistModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
-          <div className="w-full max-w-md rounded-2xl p-6 space-y-5" style={{ background: '#0D1117', border: '1px solid #1E293B' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="w-full max-w-md rounded-2xl p-6 space-y-5 bg-surface-container-lowest shadow-2xl">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white">Create Receptionist Account</h2>
-              <button onClick={() => setReceptionistModal(false)} style={{ color: '#6B7280' }}><X size={20} /></button>
+              <h2 className="text-lg font-bold text-on-surface">Create Receptionist Account</h2>
+              <button onClick={() => setReceptionistModal(false)} className="text-secondary"><X size={20} /></button>
             </div>
-            <p className="text-xs" style={{ color: '#6B7280' }}>This person will log in at <span className="text-blue-400">/login</span> and manage the queue counter at <span className="text-blue-400">/reception</span>.</p>
             <form onSubmit={handleCreateReceptionist} className="space-y-4">
               {[{ label: 'Full Name', key: 'name', type: 'text', placeholder: 'e.g. Priya Sharma' },
                 { label: 'Email', key: 'email', type: 'email', placeholder: 'priya@hospital.com' },
                 { label: 'Password', key: 'password', type: 'password', placeholder: 'Min 8 characters' }]
                 .map(({ label, key, type, placeholder }) => (
                   <div key={key} className="space-y-1.5">
-                    <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#94A3B8' }}>{label}</label>
-                    <input
-                      type={type}
-                      placeholder={placeholder}
-                      required
-                      value={receptionistForm[key]}
+                    <label className="text-xs font-semibold uppercase tracking-wide text-secondary">{label}</label>
+                    <input type={type} placeholder={placeholder} required value={receptionistForm[key]}
                       onChange={e => setReceptionistForm(f => ({ ...f, [key]: e.target.value }))}
-                      className="w-full rounded-xl px-4 py-2.5 text-sm text-white outline-none"
-                      style={{ background: '#0F172A', border: '1px solid #1E293B' }}
-                      onFocus={e => e.target.style.border = '1px solid #2563EB'}
-                      onBlur={e => e.target.style.border = '1px solid #1E293B'}
-                    />
+                      className={inputCls} />
                   </div>
                 ))}
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setReceptionistModal(false)}
-                  className="flex-1 rounded-xl py-2.5 text-sm font-semibold" style={{ background: '#1E293B', color: '#94A3B8' }}>
-                  Cancel
-                </button>
-                <button type="submit" disabled={receptionistLoading}
-                  className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white" style={{ background: '#2563EB', opacity: receptionistLoading ? 0.7 : 1 }}>
+                <button type="button" onClick={() => setReceptionistModal(false)} className="flex-1 rounded-xl py-2.5 text-sm font-semibold bg-secondary-container text-on-secondary-container">Cancel</button>
+                <button type="submit" disabled={receptionistLoading} className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-on-primary bg-primary">
                   {receptionistLoading ? 'Creating...' : 'Create Account'}
                 </button>
               </div>
@@ -248,52 +291,41 @@ export default function StaffPage() {
           </div>
         </div>
       )}
-      {/* Doctor Account Modal */}
+
+      {/* Doctor account modal */}
       {doctorAccountModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
-          <div className="w-full max-w-md rounded-2xl p-6 space-y-5" style={{ background: '#0D1117', border: '1px solid #1E293B' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="w-full max-w-md rounded-2xl p-6 space-y-5 bg-surface-container-lowest shadow-2xl">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white">Create Doctor Login Account</h2>
-              <button onClick={() => setDoctorAccountModal(false)} style={{ color: '#6B7280' }}><X size={20} /></button>
+              <h2 className="text-lg font-bold text-on-surface">Create Doctor Login Account</h2>
+              <button onClick={() => setDoctorAccountModal(false)} className="text-secondary"><X size={20} /></button>
             </div>
-            <p className="text-xs" style={{ color: '#6B7280' }}>Doctor will log in at <span className="text-blue-400">/login</span> and see their patient queue at <span className="text-blue-400">/doctor</span>.</p>
             <form onSubmit={handleCreateDoctorAccount} className="space-y-4">
               {[{ label: 'Full Name', key: 'name', type: 'text', placeholder: 'Dr. John Smith' },
                 { label: 'Email', key: 'email', type: 'email', placeholder: 'doctor@hospital.com' },
                 { label: 'Password', key: 'password', type: 'password', placeholder: 'Min 8 characters' }]
                 .map(({ label, key, type, placeholder }) => (
                   <div key={key} className="space-y-1.5">
-                    <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#94A3B8' }}>{label}</label>
-                    <input type={type} placeholder={placeholder} required
-                      value={doctorAccountForm[key]}
+                    <label className="text-xs font-semibold uppercase tracking-wide text-secondary">{label}</label>
+                    <input type={type} placeholder={placeholder} required value={doctorAccountForm[key]}
                       onChange={e => setDoctorAccountForm(f => ({ ...f, [key]: e.target.value }))}
-                      className="w-full rounded-xl px-4 py-2.5 text-sm text-white outline-none"
-                      style={{ background: '#0F172A', border: '1px solid #1E293B' }}
-                      onFocus={e => e.target.style.border = '1px solid #2563EB'}
-                      onBlur={e => e.target.style.border = '1px solid #1E293B'} />
+                      className={inputCls} />
                   </div>
                 ))}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#94A3B8' }}>Link to Doctor Profile (optional)</label>
+                <label className="text-xs font-semibold uppercase tracking-wide text-secondary">Link to Doctor Profile (optional)</label>
                 <select value={doctorAccountForm.doctorId}
                   onChange={e => setDoctorAccountForm(f => ({ ...f, doctorId: e.target.value }))}
-                  className="w-full rounded-xl px-4 py-2.5 text-sm outline-none"
-                  style={{ background: '#0F172A', border: '1px solid #1E293B', color: '#E2E8F0' }}
-                  onFocus={e => e.target.style.border = '1px solid #2563EB'}
-                  onBlur={e => e.target.style.border = '1px solid #1E293B'}>
+                  className={inputCls}>
                   <option value="">Select doctor profile...</option>
                   {(data?.staff || []).filter(s => s._type === 'doctor' || s.specialization).map(d => (
-                    <option key={d._id} value={d._id} style={{ background: '#0D1117' }}>{d.name} — {d.specialization}</option>
+                    <option key={d._id} value={d._id}>{d.name} — {d.specialization}</option>
                   ))}
                 </select>
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setDoctorAccountModal(false)}
-                  className="flex-1 rounded-xl py-2.5 text-sm font-semibold" style={{ background: '#1E293B', color: '#94A3B8' }}>
-                  Cancel
-                </button>
-                <button type="submit" disabled={doctorAccountLoading}
-                  className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white" style={{ background: '#2563EB', opacity: doctorAccountLoading ? 0.7 : 1 }}>
+                <button type="button" onClick={() => setDoctorAccountModal(false)} className="flex-1 rounded-xl py-2.5 text-sm font-semibold bg-secondary-container text-on-secondary-container">Cancel</button>
+                <button type="submit" disabled={doctorAccountLoading} className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-on-primary bg-primary">
                   {doctorAccountLoading ? 'Creating...' : 'Create Account'}
                 </button>
               </div>

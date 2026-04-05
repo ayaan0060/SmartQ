@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
-  Building2, Users, LayoutDashboard,
-  Settings, LogOut, Activity, UserCog, Menu, X,
-  Network, ChevronLeft, ChevronRight, Zap, Bell,
-  Search, Ambulance, Briefcase,
+  LayoutDashboard, Building2, Users, Settings, LogOut,
+  Activity, UserCog, Menu, X, Network, Bell,
+  Search, Ambulance, Briefcase, AlertTriangle,
+  ShieldCheck, HelpCircle, Moon, Sun,
 } from 'lucide-react';
 import { useAuthStore } from '../features/auth/useAuthStore';
+import { useTheme } from '../hooks/useTheme';
+import Footer from '../components/Footer';
 
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: 'Dashboard',   to: '/admin',             end: true },
@@ -21,9 +24,9 @@ const NAV_ITEMS = [
 ];
 
 export default function AdminLayout() {
-  const [collapsed, setCollapsed]       = useState(false);
-  const [mobileOpen, setMobileOpen]     = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { user, logout, isSuperAdmin, hospitalName } = useAuthStore();
+  const { theme, toggle } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = () => { logout(); navigate('/login'); };
@@ -36,248 +39,166 @@ export default function AdminLayout() {
   const SidebarContent = ({ mobile = false }) => (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div
-        className="flex items-center gap-3 px-4 py-4 shrink-0"
-        style={{ borderBottom: '1px solid #1E293B' }}
-      >
-        <div
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-          style={{ background: 'linear-gradient(135deg, #2563EB, #7C3AED)' }}
-        >
-          <Zap size={18} className="text-white" fill="white" />
-        </div>
-        {(!collapsed || mobile) && (
-          <div className="min-w-0">
-            <p className="font-bold text-white text-sm leading-none">SmartQ</p>
-            <p className="text-xs mt-0.5 truncate" style={{ color: '#475569' }}>
-              {isSuperAdmin() ? 'Super Admin' : (hospitalName || 'Hospital Admin')}
+      <div className="px-6 mb-10 pt-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-primary-container rounded-xl flex items-center justify-center">
+            <ShieldCheck size={20} className="text-on-primary-container" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-on-surface leading-none">Clinical Sentinel</h2>
+            <p className="text-[10px] uppercase tracking-widest text-zinc-500 mt-1">
+              {isSuperAdmin() ? 'Super Admin' : (hospitalName || 'High-Authority Care')}
             </p>
           </div>
-        )}
+        </div>
         {mobile && (
-          <button
-            onClick={() => setMobileOpen(false)}
-            className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg transition-colors duration-200"
-            style={{ color: '#64748B' }}
-            onMouseEnter={e => e.currentTarget.style.background = '#1E293B'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-          >
-            <X size={18} />
+          <button onClick={() => setMobileOpen(false)} className="absolute top-4 right-4 text-zinc-500">
+            <X size={20} />
           </button>
         )}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+      <nav className="flex-1 space-y-1">
         {navItems.map(({ icon: Icon, label, to, end }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
             onClick={() => mobile && setMobileOpen(false)}
-            title={collapsed && !mobile ? label : undefined}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                collapsed && !mobile ? 'justify-center' : ''
-              } ${
-                isActive
-                  ? 'text-white'
-                  : 'text-slate-400 hover:text-white'
-              }`
+              isActive
+                ? 'flex items-center gap-4 px-6 py-3 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 rounded-r-full mr-4 font-medium text-sm'
+                : 'flex items-center gap-4 px-6 py-3 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 font-medium text-sm'
             }
-            style={({ isActive }) => ({
-              background: isActive ? 'rgba(37,99,235,0.15)' : 'transparent',
-              border: isActive ? '1px solid rgba(37,99,235,0.2)' : '1px solid transparent',
-            })}
           >
             {({ isActive }) => (
-              <>
-                <Icon size={18} className="shrink-0" style={{ color: isActive ? '#3B82F6' : undefined }} />
-                {(!collapsed || mobile) && <span>{label}</span>}
-              </>
+              <motion.div
+                className="flex items-center gap-4 w-full"
+                whileHover={!isActive ? { x: 4 } : {}}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              >
+                <Icon size={20} />
+                <span>{label}</span>
+              </motion.div>
             )}
           </NavLink>
         ))}
       </nav>
 
-      {/* Bottom: user + actions */}
-      <div className="shrink-0 p-3 space-y-1" style={{ borderTop: '1px solid #1E293B' }}>
-        {/* User card */}
-        {(!collapsed || mobile) && (
-          <div
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 mb-2"
-            style={{ background: '#0F172A', border: '1px solid #1E293B' }}
-          >
-            <div
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-              style={{ background: 'linear-gradient(135deg, #2563EB, #7C3AED)' }}
-            >
-              {user?.name?.charAt(0)?.toUpperCase() || 'A'}
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-xs font-semibold text-white">{user?.name || 'Admin'}</p>
-              <p className="truncate text-xs" style={{ color: '#475569' }}>{user?.email || user?.phone}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Logout */}
-        <button
-          onClick={handleLogout}
-          title="Logout"
-          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${collapsed && !mobile ? 'justify-center' : ''}`}
-          style={{ color: '#EF4444' }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#F87171'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#EF4444'; }}
+      {/* Bottom */}
+      <div className="px-6 mt-auto pb-4">
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          className="w-full py-3 rounded-2xl bg-primary text-on-primary font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-primary/20 mb-6"
         >
-          <LogOut size={16} className="shrink-0" />
-          {(!collapsed || mobile) && <span>Logout</span>}
-        </button>
+          <AlertTriangle size={14} />
+          Emergency Alert
+        </motion.button>
 
-        {/* Collapse toggle (desktop only) */}
-        {!mobile && (
+        <div className="space-y-3">
+          <a href="#" className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-red-500 transition-colors">
+            <ShieldCheck size={14} /> HIPAA Privacy
+          </a>
+          <a href="#" className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-red-500 transition-colors">
+            <HelpCircle size={14} /> Support
+          </a>
           <button
-            onClick={() => setCollapsed(c => !c)}
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${collapsed ? 'justify-center' : ''}`}
-            style={{ color: '#475569' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#1E293B'; e.currentTarget.style.color = '#94A3B8'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#475569'; }}
+            onClick={handleLogout}
+            className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-red-500 transition-colors w-full"
           >
-            {collapsed ? <ChevronRight size={16} /> : <><ChevronLeft size={16} /><span>Collapse</span></>}
+            <LogOut size={14} /> Sign Out
           </button>
-        )}
+        </div>
       </div>
     </div>
   );
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: '#0B0F19' }}>
-
-      {/* ── Mobile overlay ── */}
+    <div className="flex min-h-screen bg-background">
+      {/* Mobile overlay */}
       {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
+        <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setMobileOpen(false)} />
       )}
 
-      {/* ── Mobile drawer ── */}
+      {/* Mobile drawer */}
       <aside
-        className="fixed inset-y-0 left-0 z-50 w-64 lg:hidden transition-transform duration-300"
-        style={{
-          background: '#0D1117',
-          borderRight: '1px solid #1E293B',
-          transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
-        }}
+        className="fixed inset-y-0 left-0 z-50 w-64 lg:hidden transition-transform duration-300 bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200/10"
+        style={{ transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)' }}
       >
         <SidebarContent mobile />
       </aside>
 
-      {/* ── Desktop sidebar ── */}
-      <aside
-        className="hidden lg:flex flex-col shrink-0 transition-all duration-300"
-        style={{
-          width: collapsed ? '68px' : '232px',
-          background: '#0D1117',
-          borderRight: '1px solid #1E293B',
-        }}
-      >
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex flex-col w-64 shrink-0 bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200/10 h-screen sticky top-0">
         <SidebarContent />
       </aside>
 
-      {/* ── Main area ── */}
-      <div className="flex flex-1 flex-col overflow-hidden min-w-0">
-
-        {/* Topbar */}
-        <header
-          className="flex items-center justify-between px-4 md:px-6 shrink-0"
-          style={{
-            minHeight: '60px',
-            background: 'rgba(13,17,23,0.95)',
-            borderBottom: '1px solid #1E293B',
-            backdropFilter: 'blur(12px)',
-            position: 'sticky',
-            top: 0,
-            zIndex: 30,
-          }}
-        >
-          {/* Left: hamburger (mobile) + search */}
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <button
-              onClick={() => setMobileOpen(true)}
-              className="lg:hidden flex h-9 w-9 items-center justify-center rounded-xl transition-colors duration-200 shrink-0"
-              style={{ color: '#64748B' }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#1E293B'; e.currentTarget.style.color = '#94A3B8'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748B'; }}
-            >
-              <Menu size={20} />
+      {/* Main */}
+      <div className="flex flex-1 flex-col min-w-0">
+        {/* Top header */}
+        <header className="sticky top-0 z-30 glass-nav border-b border-zinc-200/10 flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setMobileOpen(true)} className="lg:hidden text-zinc-500">
+              <Menu size={22} />
             </button>
-
-            <div className="relative hidden sm:block max-w-xs w-full">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#475569' }} />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="w-full pl-9 pr-4 py-2 rounded-xl text-sm outline-none transition-all duration-200"
-                style={{
-                  background: '#0F172A',
-                  border: '1px solid #1E293B',
-                  color: '#E2E8F0',
-                }}
-                onFocus={e => { e.target.style.border = '1px solid #2563EB'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)'; }}
-                onBlur={e => { e.target.style.border = '1px solid #1E293B'; e.target.style.boxShadow = 'none'; }}
-              />
+            <div>
+              <h2 className="text-xl font-black text-on-surface tracking-tight">
+                {isSuperAdmin() ? 'Platform Overview' : 'Clinical Sentinel Overview'}
+              </h2>
+              <p className="text-sm text-secondary font-medium mt-0.5">
+                {isSuperAdmin() ? 'Super Admin Dashboard' : (hospitalName || 'Hospital Admin')}
+              </p>
             </div>
           </div>
 
-          {/* Right: live indicator + bell + avatar */}
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Live badge */}
-            <div
-              className="hidden sm:flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
-              style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Live
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="relative hidden sm:block">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+              <input
+                type="text"
+                placeholder="Search systems..."
+                className="pl-9 pr-4 py-2 bg-surface-container-highest border-none rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none w-56 text-on-surface"
+              />
             </div>
 
-            {/* Bell */}
-            <button
-              className="relative flex h-9 w-9 items-center justify-center rounded-xl transition-colors duration-200"
-              style={{ color: '#64748B' }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#1E293B'; e.currentTarget.style.color = '#94A3B8'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748B'; }}
+            {/* Dark mode */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={toggle}
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors"
             >
-              <Bell size={18} />
-              <span
-                className="absolute right-2 top-2 h-2 w-2 rounded-full"
-                style={{ background: '#EF4444', boxShadow: '0 0 6px rgba(239,68,68,0.6)' }}
-              />
-            </button>
+              {theme === 'dark' ? <Sun size={18} className="text-on-surface-variant" /> : <Moon size={18} className="text-on-surface-variant" />}
+            </motion.button>
+
+            {/* Bell */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="relative w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors"
+            >
+              <Bell size={18} className="text-on-surface-variant" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full" />
+            </motion.button>
 
             {/* Avatar */}
-            <div className="flex items-center gap-2.5 pl-2" style={{ borderLeft: '1px solid #1E293B' }}>
-              <div
-                className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white shrink-0"
-                style={{ background: 'linear-gradient(135deg, #2563EB, #7C3AED)' }}
-              >
+            <div className="flex items-center gap-3 pl-3 border-l border-outline-variant/30">
+              <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary font-bold text-sm">
                 {user?.name?.charAt(0)?.toUpperCase() || 'A'}
-              </div>
-              <div className="hidden md:block">
-                <p className="text-xs font-semibold text-white leading-none">{user?.name || 'Admin'}</p>
-                <p className="text-xs mt-0.5" style={{ color: '#475569' }}>
-                  {isSuperAdmin() ? 'Super Admin' : (hospitalName || 'Hospital Admin')}
-                </p>
               </div>
             </div>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main className="flex-1 p-6 md:p-8 overflow-y-auto">
           <Outlet />
         </main>
+
+        <Footer />
       </div>
     </div>
   );

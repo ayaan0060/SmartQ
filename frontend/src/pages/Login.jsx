@@ -1,53 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Eye, EyeOff, Phone, Mail, Lock, Zap, Clock, ShieldCheck, Users, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Phone, Mail, Lock, ArrowRight, ShieldCheck, AlertTriangle } from 'lucide-react';
 import api from '../lib/api';
 import { useAuthStore } from '../features/auth/useAuthStore';
-
-const FEATURES = [
-  { icon: Clock,       title: 'Skip the physical queue',    desc: 'Book your token online and arrive when it\'s your turn.' },
-  { icon: Users,       title: 'Real-time queue updates',    desc: 'Live position tracking so you\'re never left guessing.' },
-  { icon: ShieldCheck, title: 'Trusted by hospitals',       desc: 'Used across multiple hospitals for seamless patient flow.' },
-];
-
-const inputCls = 'w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-white placeholder-slate-600 transition-all duration-200 outline-none';
-const inputStyle = (err) => ({
-  background: '#0F172A',
-  border: err ? '1px solid #EF4444' : '1px solid #1E293B',
-  boxShadow: err ? '0 0 0 3px rgba(239,68,68,0.1)' : undefined,
-});
-const onFocus = (e) => { e.target.style.border = '1px solid #2563EB'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.15)'; };
-const onBlur  = (e, err) => { e.target.style.border = err ? '1px solid #EF4444' : '1px solid #1E293B'; e.target.style.boxShadow = 'none'; };
 
 const MODES = [
   { id: 'phone', icon: Phone, label: 'Phone' },
   { id: 'email', icon: Mail,  label: 'Email' },
 ];
 
+const inputCls = 'w-full pl-12 pr-4 py-4 bg-surface-container-highest border-none rounded-2xl focus:ring-2 focus:ring-primary/20 transition-all text-on-surface font-medium placeholder:text-secondary/50 outline-none text-sm';
+
 export default function Login() {
-  const [form, setForm]             = useState({ phone: '', email: '', password: '' });
+  const [form, setForm]         = useState({ phone: '', email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading]       = useState(false);
-  const [mode, setMode]             = useState('phone');
-  const [errors, setErrors]         = useState({});
+  const [loading, setLoading]   = useState(false);
+  const [mode, setMode]         = useState('phone');
+  const [errors, setErrors]     = useState({});
   const { setAuth, token: authToken } = useAuthStore();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (authToken) {
       const { user } = useAuthStore.getState();
-      if (user?.role === 'receptionist') navigate('/reception', { replace: true });
+      if (user?.role === 'patient') navigate('/select-hospital', { replace: true });
+      else if (user?.role === 'receptionist') navigate('/reception', { replace: true });
       else if (user?.role === 'doctor') navigate('/doctor', { replace: true });
       else if (['super-admin', 'hospital-admin', 'staff'].includes(user?.role)) navigate('/admin', { replace: true });
-      else navigate('/dashboard', { replace: true });
+      else navigate('/select-hospital', { replace: true });
     }
   }, [authToken, navigate]);
 
-  const set = (field, val) => {
-    setForm(f => ({ ...f, [field]: val }));
-    setErrors(e => ({ ...e, [field]: '' }));
-  };
+  const set = (field, val) => { setForm(f => ({ ...f, [field]: val })); setErrors(e => ({ ...e, [field]: '' })); };
 
   const validate = () => {
     const e = {};
@@ -58,7 +44,8 @@ export default function Login() {
   };
 
   const redirectUser = (user) => {
-    if (user.role === 'receptionist') navigate('/reception');
+    if (user.role === 'patient') navigate('/select-hospital');
+    else if (user.role === 'receptionist') navigate('/reception');
     else if (user.role === 'doctor') navigate('/doctor');
     else if (['super-admin', 'hospital-admin', 'staff'].includes(user.role)) navigate('/admin');
     else navigate('/select-hospital');
@@ -88,165 +75,159 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#0B0F19' }}>
+    <div className="min-h-screen bg-surface text-on-surface" style={{ backgroundImage: 'radial-gradient(#e4bdbb 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }}>
+      <main className="min-h-screen flex items-center justify-center p-6">
+        <div className="w-full max-w-[1100px] grid grid-cols-1 md:grid-cols-12 gap-0 overflow-hidden bg-surface-container-lowest rounded-2xl shadow-[0px_20px_40px_rgba(26,28,28,0.06)] ring-1 ring-outline-variant/10">
 
-      {/* Left panel */}
-      <div className="hidden lg:flex lg:w-[480px] xl:w-[520px] flex-col justify-between p-12 shrink-0"
-        style={{ background: 'linear-gradient(160deg, #0f1e3d 0%, #0B0F19 60%, #0d1a2e 100%)', borderRight: '1px solid rgba(59,130,246,0.12)' }}>
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: 'linear-gradient(135deg, #2563EB, #7C3AED)' }}>
-            <Zap size={20} className="text-white" fill="white" />
-          </div>
-          <span className="text-xl font-bold text-white tracking-tight">SmartQ</span>
-        </div>
-        <div className="space-y-8">
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
-              style={{ background: 'rgba(37,99,235,0.15)', color: '#60A5FA', border: '1px solid rgba(37,99,235,0.25)' }}>
-              <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
-              Healthcare Queue Management
+          {/* Left: Branding */}
+          <section className="hidden md:flex md:col-span-5 relative flex-col justify-between p-12 bg-primary overflow-hidden">
+            <div className="relative z-10">
+              <div className="text-3xl font-black italic tracking-tighter text-on-primary mb-2">SmartQ</div>
+              <div className="h-1 w-12 bg-on-primary/30 mb-8" />
+              <h1 className="text-4xl font-extrabold text-on-primary leading-tight mb-4">
+                High-Authority <br />Care Intelligence.
+              </h1>
+              <p className="text-on-primary-container font-medium opacity-90 max-w-xs leading-relaxed">
+                Access the Clinical Sentinel for real-time queue management and emergency triage.
+              </p>
             </div>
-            <h1 className="text-4xl font-bold text-white leading-tight">
-              The smarter way<br />
-              <span style={{ color: '#60A5FA' }}>to manage queues</span>
-            </h1>
-            <p className="text-base leading-relaxed" style={{ color: '#94A3B8' }}>
-              Skip the wait. Book your token online and get real-time updates on your queue position.
-            </p>
-          </div>
-          <div className="space-y-4">
-            {FEATURES.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl mt-0.5"
-                  style={{ background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.2)' }}>
-                  <Icon size={18} style={{ color: '#60A5FA' }} />
+            <div className="absolute inset-0 opacity-20 pointer-events-none">
+              <div className="absolute -right-20 -bottom-20 w-96 h-96 bg-on-primary rounded-full blur-3xl opacity-30" />
+            </div>
+            <div className="relative z-10 mt-auto">
+              <div className="flex items-center gap-3 text-on-primary/70 text-xs font-bold uppercase tracking-widest">
+                <ShieldCheck size={16} />
+                HIPAA COMPLIANT INTERFACE
+              </div>
+            </div>
+          </section>
+
+          {/* Right: Form */}
+          <section className="col-span-1 md:col-span-7 p-8 md:p-16 flex flex-col justify-center">
+            <div className="max-w-md w-full mx-auto">
+              <header className="mb-10">
+                <h2 className="text-3xl font-extrabold tracking-tight text-on-surface mb-2">Secure Access</h2>
+                <p className="text-secondary font-medium">Log in to your clinical workstation.</p>
+              </header>
+
+              {/* Mode toggle */}
+              <div className="flex rounded-xl p-1 mb-6 bg-surface-container-high">
+                {MODES.map(({ id, icon: Icon, label }) => (
+                  <button key={id} type="button"
+                    onClick={() => { setMode(id); setErrors({}); }}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-all"
+                    style={{ background: mode === id ? '#ffffff' : 'transparent', color: mode === id ? '#a5001b' : '#5f5e5e', boxShadow: mode === id ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
+                  >
+                    <Icon size={14} />{label}
+                  </button>
+                ))}
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-6" noValidate>
+                {/* Identifier */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-secondary ml-1">
+                    {mode === 'phone' ? 'Phone Number' : 'Email Address'}
+                  </label>
+                  <div className="relative flex items-center group">
+                    {mode === 'phone'
+                      ? <Phone size={20} className="absolute left-4 text-secondary group-focus-within:text-primary transition-colors" />
+                      : <Mail size={20} className="absolute left-4 text-secondary group-focus-within:text-primary transition-colors" />
+                    }
+                    {mode === 'phone' ? (
+                      <input
+                        type="tel" placeholder="+91 XXXXXXXXXX" value={form.phone}
+                        onChange={e => set('phone', e.target.value)}
+                        className={inputCls}
+                      />
+                    ) : (
+                      <input
+                        type="email" placeholder="admin@hospital.com" value={form.email}
+                        onChange={e => set('email', e.target.value)}
+                        className={inputCls}
+                      />
+                    )}
+                  </div>
+                  {(errors.phone || errors.email) && <p className="text-xs text-error ml-1">{errors.phone || errors.email}</p>}
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">{title}</p>
-                  <p className="text-xs mt-0.5 leading-relaxed" style={{ color: '#64748B' }}>{desc}</p>
+
+                {/* Password */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center px-1">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-secondary">Password</label>
+                    <a href="#" className="text-[10px] font-bold uppercase tracking-widest text-primary hover:text-primary-container transition-colors">Forgot Access?</a>
+                  </div>
+                  <div className="relative flex items-center group">
+                    <Lock size={20} className="absolute left-4 text-secondary group-focus-within:text-primary transition-colors" />
+                    <input
+                      type={showPassword ? 'text' : 'password'} placeholder="••••••••••••"
+                      value={form.password} onChange={e => set('password', e.target.value)}
+                      className="w-full pl-12 pr-12 py-4 bg-surface-container-highest border-none rounded-2xl focus:ring-2 focus:ring-primary/20 transition-all text-on-surface font-medium placeholder:text-secondary/50 outline-none text-sm"
+                    />
+                    <button type="button" onClick={() => setShowPassword(s => !s)} className="absolute right-4 text-secondary hover:text-on-surface">
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  {errors.password && <p className="text-xs text-error ml-1">{errors.password}</p>}
+                </div>
+
+                {/* Submit */}
+                <motion.button
+                  type="submit" disabled={loading}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full py-4 bg-primary text-on-primary rounded-2xl font-bold text-lg hover:bg-primary-container transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <span className="h-5 w-5 rounded-full border-2 border-on-primary/30 border-t-on-primary animate-spin" />
+                  ) : (
+                    <>Emergency Login <ArrowRight size={18} /></>
+                  )}
+                </motion.button>
+              </form>
+
+              {/* Divider */}
+              <div className="relative py-6">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-outline-variant/30" /></div>
+                <div className="relative flex justify-center text-[10px] font-bold uppercase tracking-widest">
+                  <span className="bg-surface-container-lowest px-4 text-secondary">Institutional SSO</span>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-        <p className="text-xs" style={{ color: '#334155' }}>© {new Date().getFullYear()} SmartQ. All rights reserved.</p>
-      </div>
 
-      {/* Right panel */}
-      <div className="flex flex-1 flex-col items-center justify-center px-4 py-12">
-
-        {/* Mobile logo */}
-        <div className="lg:hidden flex items-center gap-3 mb-10">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: 'linear-gradient(135deg, #2563EB, #7C3AED)' }}>
-            <Zap size={20} className="text-white" fill="white" />
-          </div>
-          <span className="text-xl font-bold text-white">SmartQ</span>
-        </div>
-
-        <div className="w-full max-w-sm">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-white">Welcome back</h2>
-            <p className="text-sm mt-1.5" style={{ color: '#64748B' }}>Sign in to your account to continue</p>
-          </div>
-
-          {/* Mode toggle */}
-          <div className="flex rounded-xl p-1 mb-3" style={{ background: '#1E293B', border: '1px solid #334155' }}>
-            {MODES.map(({ id, icon: Icon, label }) => (
-              <button key={id} type="button"
-                onClick={() => { setMode(id); setErrors({}); }}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
-                style={{ background: mode === id ? '#2563EB' : 'transparent', color: mode === id ? '#fff' : '#64748B' }}>
-                <Icon size={14} />{label}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs mb-5" style={{ color: '#475569' }}>
-            {mode === 'phone' ? 'Patients registered with phone number' : 'Staff / Doctors / Admin or patients registered with email'}
-          </p>
-
-          <form onSubmit={handleLogin} className="space-y-4" noValidate>
-
-            {mode === 'phone' ? (
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold uppercase tracking-wide" style={{ color: '#94A3B8' }}>Phone Number</label>
-                <div className="relative">
-                  <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: '#475569' }} />
-                  <input type="tel" placeholder="+91 XXXXXXXXXX" value={form.phone}
-                    onChange={e => set('phone', e.target.value)} autoComplete="tel"
-                    className={inputCls} style={inputStyle(errors.phone)}
-                    onFocus={onFocus} onBlur={e => onBlur(e, errors.phone)} />
-                </div>
-                {errors.phone && <p className="text-xs text-red-400">{errors.phone}</p>}
-              </div>
-            ) : (
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold uppercase tracking-wide" style={{ color: '#94A3B8' }}>Email Address</label>
-                <div className="relative">
-                  <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: '#475569' }} />
-                  <input type="email" placeholder="admin@hospital.com" value={form.email}
-                    onChange={e => set('email', e.target.value)} autoComplete="email"
-                    className={inputCls} style={inputStyle(errors.email)}
-                    onFocus={onFocus} onBlur={e => onBlur(e, errors.email)} />
-                </div>
-                {errors.email && <p className="text-xs text-red-400">{errors.email}</p>}
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wide" style={{ color: '#94A3B8' }}>Password</label>
-              <div className="relative">
-                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: '#475569' }} />
-                <input type={showPassword ? 'text' : 'password'} placeholder="••••••••"
-                  value={form.password} onChange={e => set('password', e.target.value)}
-                  autoComplete="current-password"
-                  className="w-full pl-10 pr-11 py-2.5 rounded-xl text-sm text-white placeholder-slate-600 transition-all duration-200 outline-none"
-                  style={inputStyle(errors.password)}
-                  onFocus={onFocus} onBlur={e => onBlur(e, errors.password)} />
-                <button type="button" onClick={() => setShowPassword(s => !s)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors duration-200"
-                  style={{ color: '#475569' }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#94A3B8'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#475569'}
-                  tabIndex={-1}>
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              {/* SSO buttons */}
+              <div className="grid grid-cols-2 gap-4">
+                <button className="flex items-center justify-center gap-3 py-3 px-4 bg-surface-container-low rounded-2xl border border-outline-variant/10 hover:bg-surface-container transition-colors">
+                  <ShieldCheck size={18} className="text-secondary" />
+                  <span className="text-xs font-bold text-on-surface">HealthConnect</span>
+                </button>
+                <button className="flex items-center justify-center gap-3 py-3 px-4 bg-surface-container-low rounded-2xl border border-outline-variant/10 hover:bg-surface-container transition-colors">
+                  <Lock size={18} className="text-secondary" />
+                  <span className="text-xs font-bold text-on-surface">Biometrics</span>
                 </button>
               </div>
-              {errors.password && <p className="text-xs text-red-400">{errors.password}</p>}
+
+              <footer className="mt-10 text-center space-y-3">
+                <p className="text-xs text-secondary font-medium">
+                  System status: <span className="text-tertiary-container font-bold uppercase tracking-tight">All Operations Online</span>
+                </p>
+                <p className="text-sm text-secondary">
+                  Don't have an account?{' '}
+                  <Link to="/register" className="font-bold text-primary hover:text-primary-container transition-colors">Create account</Link>
+                </p>
+              </footer>
             </div>
+          </section>
+        </div>
+      </main>
 
-            <button type="submit" disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 active:scale-[0.98] mt-2"
-              style={{ background: loading ? '#1E3A8A' : 'linear-gradient(135deg, #1D4ED8, #2563EB)', opacity: loading ? 0.8 : 1, cursor: loading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(37,99,235,0.3)' }}>
-              {loading ? <><span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />Signing in...</> : <>Sign In <ArrowRight size={16} /></>}
-            </button>
-          </form>
-
-          <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px" style={{ background: '#1E293B' }} />
-            <span className="text-xs font-medium" style={{ color: '#334155' }}>or</span>
-            <div className="flex-1 h-px" style={{ background: '#1E293B' }} />
-          </div>
-
-          <div className="space-y-3 text-center">
-            <p className="text-sm" style={{ color: '#475569' }}>
-              Don't have an account?{' '}
-              <Link to="/register" className="font-semibold transition-colors duration-200" style={{ color: '#3B82F6' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#60A5FA'}
-                onMouseLeave={e => e.currentTarget.style.color = '#3B82F6'}>
-                Create account
-              </Link>
-            </p>
-            <p className="text-sm" style={{ color: '#475569' }}>
-              Own a hospital?{' '}
-              <Link to="/register-hospital" className="font-semibold transition-colors duration-200" style={{ color: '#3B82F6' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#60A5FA'}
-                onMouseLeave={e => e.currentTarget.style.color = '#3B82F6'}>
-                Register your hospital
-              </Link>
-            </p>
-          </div>
-
-
+      {/* Bottom ticker */}
+      <div className="fixed bottom-0 left-0 w-full bg-primary-container text-on-primary-container py-2 px-6 flex justify-between items-center z-50">
+        <div className="flex items-center gap-3">
+          <AlertTriangle size={16} />
+          <span className="text-[10px] font-black uppercase tracking-[0.2em]">Clinical Alert System: Standby</span>
+        </div>
+        <div className="text-[10px] font-bold opacity-75">
+          {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} UTC
         </div>
       </div>
     </div>

@@ -155,19 +155,12 @@ const ForHospitals = () => {
             className="flex flex-col sm:flex-row items-center gap-4 mt-2"
           >
             <Link
-              to="/register-hospital"
-              id="hero-register-btn"
-              className="btn btn-primary text-base px-8 py-4 rounded-2xl shadow-2xl shadow-primary/30 hover:scale-105 transition-transform flex items-center gap-2"
-            >
-              Register Your Hospital Free
-              <ArrowRight size={18} />
-            </Link>
-            <Link
               to="/select-hospital"
               id="hero-demo-btn"
-              className="text-sm font-bold text-white/70 hover:text-white flex items-center gap-1.5 transition-colors"
+              className="btn btn-primary text-base px-8 py-4 rounded-2xl shadow-2xl shadow-primary/30 hover:scale-105 transition-transform flex items-center gap-2"
             >
-              See it in action <ChevronRight size={16} />
+              See It In Action
+              <ChevronRight size={18} />
             </Link>
           </motion.div>
 
