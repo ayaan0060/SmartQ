@@ -290,9 +290,21 @@ io.on('connection', (socket) => {
 // ── Database ─────────────────────────────────────────────────
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/smartq';
 
+const mongooseOptions = {
+  tls: true,
+  tlsAllowInvalidCertificates: false,
+  retryWrites: true,
+  serverSelectionTimeoutMS: 15000,
+  socketTimeoutMS: 45000,
+  connectTimeoutMS: 15000,
+  maxPoolSize: 10,
+  minPoolSize: 2,
+  heartbeatFrequencyMS: 10000,
+};
+
 const connectWithRetry = (retries = 5, delay = 5000) => {
   console.log(`🔄 Connecting to MongoDB... (attempts left: ${retries})`);
-  mongoose.connect(MONGODB_URI)
+  mongoose.connect(MONGODB_URI, mongooseOptions)
     .then(() => {
       console.log('✅ MongoDB connected');
       startDoctorScheduler();
