@@ -56,7 +56,7 @@ function Field({ label, name, type = 'text', placeholder, value, onChange, optio
 }
 
 export default function AmbulancesPage() {
-  const { getHospitalId, user } = useAuthStore();
+  const { getHospitalId } = useAuthStore();
   const hospitalId = getHospitalId();
 
   const [ambulances,  setAmbulances]  = useState([]);

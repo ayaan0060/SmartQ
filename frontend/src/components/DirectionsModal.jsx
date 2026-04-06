@@ -63,14 +63,10 @@ const DirectionsModal = ({ isOpen, onClose, hospital, userLocation }) => {
   const voiceNav    = useVoiceNavigation();
   const fetchedRef  = useRef(false);  // prevent double-fetch in StrictMode
 
-  // ── Fetch route when modal opens ────────────────────────────────────────────
-  useEffect(() => {
-    if (!isOpen || fetchedRef.current) return;
-
+  const loadRoute = useCallback(() => {
     const hLat = hospital?.coordinates?.lat;
     const hLng = hospital?.coordinates?.lng;
-    const hasCoords =
-      hLat != null && hLng != null && !isNaN(hLat) && !isNaN(hLng);
+    const hasCoords = hLat != null && hLng != null && !isNaN(hLat) && !isNaN(hLng);
 
     if (!userLocation || !hasCoords) return;
 
@@ -87,16 +83,25 @@ const DirectionsModal = ({ isOpen, onClose, hospital, userLocation }) => {
         setRouteError('Route unavailable — showing map with markers only.');
       })
       .finally(() => setRouteLoading(false));
-  }, [isOpen, userLocation, hospital]);
+  }, [userLocation, hospital]);
+
+  // ── Fetch route when modal opens ────────────────────────────────────────────
+  useEffect(() => {
+    if (isOpen && !fetchedRef.current) {
+      setTimeout(loadRoute, 0);
+    }
+  }, [isOpen, loadRoute]);
 
   // ── Reset state when modal closes ──────────────────────────────────────────
   useEffect(() => {
     if (!isOpen) {
-      fetchedRef.current = false;
-      setRoute(null);
-      setRouteError(null);
-      setRouteLoading(false);
-      setNavActive(false);
+      setTimeout(() => {
+        fetchedRef.current = false;
+        setRoute(null);
+        setRouteError(null);
+        setRouteLoading(false);
+        setNavActive(false);
+      }, 0);
     }
   }, [isOpen]);
 

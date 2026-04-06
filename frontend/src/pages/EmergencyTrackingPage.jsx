@@ -5,7 +5,7 @@ import { Phone, ArrowLeft, Loader2, Navigation } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
 import socket from '../lib/socket';
-import { ambulanceIcon, hospitalIcon, patientIcon } from '../components/leafletIcons';
+import { ambulanceIcon, patientIcon } from '../components/leafletIcons';
 import { fetchRoute, haversineDistance } from '../services/osrmService';
 import DirectionsModal from '../components/DirectionsModal';
 
@@ -106,7 +106,7 @@ export default function EmergencyTrackingPage() {
       socket.off('emergency:dispatched',     onDispatched);
       socket.off('ambulance:location:updated', onLocation);
     };
-  }, [requestId, request?.ambulance?._id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [requestId, request?.ambulance?._id]);
 
   if (loading) {
     return (

@@ -287,12 +287,14 @@ export default function HospitalDetailPage() {
   const [activeTab, setActiveTab] = useState('Overview');
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    setLoading(true);
-    api.get(`/hospitals/${id}`)
-      .then(r => setData(r.data.data))
-      .catch(() => { toast.error('Hospital not found'); navigate('/admin/hospitals'); })
-      .finally(() => setLoading(false));
+    const t = setTimeout(() => {
+      setLoading(true);
+      api.get(`/hospitals/${id}`)
+        .then(r => setData(r.data.data))
+        .catch(() => { toast.error('Hospital not found'); navigate('/admin/hospitals'); })
+        .finally(() => setLoading(false));
+    }, 0);
+    return () => clearTimeout(t);
   }, [id, navigate]);
 
   return (

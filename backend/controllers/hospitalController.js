@@ -116,12 +116,29 @@ const getHospitalDoctors = asyncHandler(async (req, res) => {
 
 // ─── GET /api/hospitals/:id/patients ──────────────────────────────────────────
 const getHospitalPatients = asyncHandler(async (req, res) => {
+  // Only hospital staff can access patient lists
+  const allowedRoles = ['super-admin', 'hospital-admin', 'staff', 'receptionist'];
+  if (!allowedRoles.includes(req.user?.role)) {
+    return error(res, 'Access denied', 403);
+  }
+  // Hospital-admin can only access their own hospital's patients
+  if (req.user.role === 'hospital-admin' && req.params.id !== req.user.hospitalId?.toString()) {
+    return error(res, 'Access denied', 403);
+  }
   const patients = await Patient.find({ hospitalId: req.params.id }).lean();
   return success(res, { patients, count: patients.length });
 });
 
 // ─── GET /api/hospitals/:id/queue  ────────────────────────────────────────────
 const getHospitalQueue = asyncHandler(async (req, res) => {
+  // Only hospital staff can access queue details
+  const allowedRoles = ['super-admin', 'hospital-admin', 'staff', 'receptionist', 'doctor'];
+  if (!allowedRoles.includes(req.user?.role)) {
+    return error(res, 'Access denied', 403);
+  }
+  if (req.user.role === 'hospital-admin' && req.params.id !== req.user.hospitalId?.toString()) {
+    return error(res, 'Access denied', 403);
+  }
   const tokens = await Token.find({ hospitalId: req.params.id, status: { $in: ['waiting', 'in-progress'] } })
     .populate('patientId', 'name phone')
     .populate('doctorId', 'name specialization')
@@ -228,15 +245,21 @@ const registerWithAdmin = asyncHandler(async (req, res) => {
 
 // ─── POST /api/hospitals (super-admin only) ───────────────────────────────────
 const create = asyncHandler(async (req, res) => {
-  const hospital = await Hospital.create(req.body);
+  // Whitelist only safe fields — never spread req.body directly
+  const { name, location, address, contact, timings, code, email, rating } = req.body;
+  const hospital = await Hospital.create({ name, location, address, contact, timings, code, email, rating });
   return success(res, { hospital }, 201, 'Hospital created');
 });
 
 // ─── PATCH /api/hospitals/:id ─────────────────────────────────────────────────
 const update = asyncHandler(async (req, res) => {
-  const hospital = await Hospital.findByIdAndUpdate(req.params.id, req.body, {
-    new: true, runValidators: true,
-  });
+  // Whitelist updatable fields — prevent mass assignment of status/adminId
+  const { name, location, address, contact, timings, email, rating, coordinates } = req.body;
+  const hospital = await Hospital.findByIdAndUpdate(
+    req.params.id,
+    { name, location, address, contact, timings, email, rating, coordinates },
+    { new: true, runValidators: true }
+  );
   if (!hospital) return error(res, 'Hospital not found', 404);
   return success(res, { hospital }, 200, 'Hospital updated');
 });

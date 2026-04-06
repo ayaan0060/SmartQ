@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
   Building2, MapPin, Phone, Clock, Hash, Star,
@@ -8,10 +8,8 @@ import {
   Stethoscope, FileText, Shield, User, Mail, Lock,
 } from 'lucide-react';
 import api from '../lib/api';
-import { useAuthStore } from '../features/auth/useAuthStore';
 
 /* ---------- tiny helpers ---------- */
-// eslint-disable-next-line no-unused-vars
 function InputField({ id, label, icon: Icon, error, ...props }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -33,28 +31,6 @@ function InputField({ id, label, icon: Icon, error, ...props }) {
   );
 }
 
-// eslint-disable-next-line no-unused-vars
-function TextareaField({ id, label, icon: Icon, error, ...props }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-        <Icon size={14} className="text-primary" />
-        {label}
-      </label>
-      <textarea
-        id={id}
-        rows={3}
-        className={`w-full rounded-xl border px-4 py-3 text-sm font-medium text-slate-800
-          bg-white shadow-sm transition-all outline-none resize-none
-          placeholder:text-slate-400
-          focus:border-primary focus:ring-3 focus:ring-primary/10
-          ${error ? 'border-red-400' : 'border-slate-200'}`}
-        {...props}
-      />
-      {error && <p className="text-xs font-medium text-red-500">{error}</p>}
-    </div>
-  );
-}
 
 /* ---------- steps config ---------- */
 const STEPS = [
@@ -139,7 +115,6 @@ const validate = (fields) => {
 /* ---------- main component ---------- */
 const HospitalRegister = () => {
   const navigate = useNavigate();
-  const { setAuth } = useAuthStore();
 
   const [step, setStep] = useState(0); // 0 | 1 | 2 | 3
   const [submitted, setSubmitted] = useState(false);

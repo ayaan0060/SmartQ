@@ -1,12 +1,6 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
-const glowMap = {
-  blue:   'stat-glow-blue',
-  green:  'stat-glow-green',
-  purple: 'stat-glow-purple',
-  orange: 'stat-glow-orange',
-};
 
 const colorMap = {
   blue:   { icon: '#a5001b', iconBg: 'rgba(165,0,27,0.08)' },
@@ -17,7 +11,6 @@ const colorMap = {
 
 export default function StatCard({ label, value, icon: Icon, color = 'blue', trend, trendValue, subtitle }) {
   const c = colorMap[color] || colorMap.blue;
-  const glow = glowMap[color] || '';
 
   const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
   const trendColor = trend === 'up' ? '#10B981' : trend === 'down' ? '#EF4444' : '#9CA3AF';

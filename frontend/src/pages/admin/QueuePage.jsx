@@ -96,7 +96,6 @@ export default function QueuePage() {
           { label: 'Waiting', value: waiting.length, color: '#F59E0B', icon: Users },
           { label: 'In Progress', value: current ? 1 : 0, color: '#3B82F6', icon: Zap },
           { label: 'Completed', value: completed, color: '#10B981', icon: CheckCircle2 },
-        // eslint-disable-next-line no-unused-vars
         ].map(({ label, value, color, icon: Icon }) => (
           <div key={label} className="card p-4 flex items-center gap-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl shrink-0"

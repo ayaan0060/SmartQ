@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ChevronLeft, Info, AlertCircle, Clock, CheckCircle2, Ticket, Copy, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
-// eslint-disable-next-line no-unused-vars
 import { motion, useReducedMotion } from 'framer-motion';
 import { staggerContainer, fadeUp } from '../utils/motion';
 
@@ -82,7 +81,7 @@ const TokenStatus = () => {
       fetchToken();
     };
 
-    const handleTokenCalled = ({ tokenNumber, message }) => {
+    const handleTokenCalled = ({ message }) => {
       toast.success(`🔔 ${message}`, { duration: 8000 });
       if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
         new Notification('SmartQ — Your Turn!', {

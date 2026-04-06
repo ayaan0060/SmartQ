@@ -33,18 +33,18 @@ export default function PatientsPage() {
 
   // ── Register modal state (UNCHANGED) ────────────────────────────────────────
   const [patients, setPatients] = useState([]);
-  const [loading,  setLoading]  = useState(true);
   const [modal,    setModal]    = useState({ open: false, mode: 'create', data: EMPTY });
 
   const load = useCallback(() => {
-    setLoading(true);
     api.get('/patients')
       .then(r => setPatients(r.data.data.patients || []))
-      .catch(() => toast.error('Failed to load patients'))
-      .finally(() => setLoading(false));
+      .catch(() => toast.error('Failed to load patients'));
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const t = setTimeout(() => load(), 0);
+    return () => clearTimeout(t);
+  }, [load]);
 
   // ── New feature state ────────────────────────────────────────────────────────
   const [selectedDate,    setSelectedDate]    = useState(new Date());
@@ -81,15 +81,6 @@ export default function PatientsPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this patient record?')) return;
-    try {
-      await api.delete(`/patients/${id}`);
-      toast.success('Patient deleted');
-      load();
-      refetch();
-    } catch { toast.error('Failed to delete'); }
-  };
 
   const handleFieldChange = (name, value) => setModal(m => ({ ...m, data: { ...m.data, [name]: value } }));
 

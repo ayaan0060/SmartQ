@@ -23,6 +23,85 @@ const NAV_ITEMS = [
   { icon: Settings,        label: 'Settings',    to: '/admin/settings' },
 ];
 
+const SidebarContent = ({ mobile = false, isSuperAdmin, hospitalName, setMobileOpen, navItems, handleLogout }) => (
+  <div className="flex flex-col h-full">
+    {/* Logo */}
+    <div className="px-6 mb-10 pt-4">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-primary-container rounded-xl flex items-center justify-center">
+          <ShieldCheck size={20} className="text-on-primary-container" />
+        </div>
+        <div>
+          <h2 className="text-sm font-bold text-on-surface leading-none">Clinical Sentinel</h2>
+          <p className="text-[10px] uppercase tracking-widest text-zinc-500 mt-1">
+            {isSuperAdmin() ? 'Super Admin' : (hospitalName || 'High-Authority Care')}
+          </p>
+        </div>
+      </div>
+      {mobile && (
+        <button onClick={() => setMobileOpen(false)} className="absolute top-4 right-4 text-zinc-500">
+          <X size={20} />
+        </button>
+      )}
+    </div>
+
+    {/* Nav */}
+    <nav className="flex-1 space-y-1">
+      {navItems.map(({ icon: Icon, label, to, end }) => (
+        <NavLink
+          key={to}
+          to={to}
+          end={end}
+          onClick={() => mobile && setMobileOpen(false)}
+          className={({ isActive }) =>
+            isActive
+              ? 'flex items-center gap-4 px-6 py-3 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 rounded-r-full mr-4 font-medium text-sm'
+              : 'flex items-center gap-4 px-6 py-3 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 font-medium text-sm'
+          }
+        >
+          {({ isActive }) => (
+            <motion.div
+              className="flex items-center gap-4 w-full"
+              whileHover={!isActive ? { x: 4 } : {}}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            >
+              <Icon size={20} />
+              <span>{label}</span>
+            </motion.div>
+          )}
+        </NavLink>
+      ))}
+    </nav>
+
+    {/* Bottom */}
+    <div className="px-6 mt-auto pb-4">
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.97 }}
+        className="w-full py-3 rounded-2xl bg-primary text-on-primary font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-primary/20 mb-6"
+      >
+        <AlertTriangle size={14} />
+        Emergency Alert
+      </motion.button>
+
+      <div className="space-y-3">
+        <a href="#" className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-red-500 transition-colors">
+          <ShieldCheck size={14} /> HIPAA Privacy
+        </a>
+        <a href="#" className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-red-500 transition-colors">
+          <HelpCircle size={14} /> Support
+        </a>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-red-500 transition-colors w-full"
+        >
+          <LogOut size={14} /> Sign Out
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
 export default function AdminLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, logout, isSuperAdmin, hospitalName } = useAuthStore();
@@ -36,85 +115,6 @@ export default function AdminLayout() {
     return !item.superAdminOnly;
   });
 
-  const SidebarContent = ({ mobile = false }) => (
-    <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className="px-6 mb-10 pt-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary-container rounded-xl flex items-center justify-center">
-            <ShieldCheck size={20} className="text-on-primary-container" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-on-surface leading-none">Clinical Sentinel</h2>
-            <p className="text-[10px] uppercase tracking-widest text-zinc-500 mt-1">
-              {isSuperAdmin() ? 'Super Admin' : (hospitalName || 'High-Authority Care')}
-            </p>
-          </div>
-        </div>
-        {mobile && (
-          <button onClick={() => setMobileOpen(false)} className="absolute top-4 right-4 text-zinc-500">
-            <X size={20} />
-          </button>
-        )}
-      </div>
-
-      {/* Nav */}
-      <nav className="flex-1 space-y-1">
-        {navItems.map(({ icon: Icon, label, to, end }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            onClick={() => mobile && setMobileOpen(false)}
-            className={({ isActive }) =>
-              isActive
-                ? 'flex items-center gap-4 px-6 py-3 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 rounded-r-full mr-4 font-medium text-sm'
-                : 'flex items-center gap-4 px-6 py-3 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 font-medium text-sm'
-            }
-          >
-            {({ isActive }) => (
-              <motion.div
-                className="flex items-center gap-4 w-full"
-                whileHover={!isActive ? { x: 4 } : {}}
-                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              >
-                <Icon size={20} />
-                <span>{label}</span>
-              </motion.div>
-            )}
-          </NavLink>
-        ))}
-      </nav>
-
-      {/* Bottom */}
-      <div className="px-6 mt-auto pb-4">
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
-          className="w-full py-3 rounded-2xl bg-primary text-on-primary font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-primary/20 mb-6"
-        >
-          <AlertTriangle size={14} />
-          Emergency Alert
-        </motion.button>
-
-        <div className="space-y-3">
-          <a href="#" className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-red-500 transition-colors">
-            <ShieldCheck size={14} /> HIPAA Privacy
-          </a>
-          <a href="#" className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-red-500 transition-colors">
-            <HelpCircle size={14} /> Support
-          </a>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-red-500 transition-colors w-full"
-          >
-            <LogOut size={14} /> Sign Out
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="flex min-h-screen bg-background">
       {/* Mobile overlay */}
@@ -127,12 +127,25 @@ export default function AdminLayout() {
         className="fixed inset-y-0 left-0 z-50 w-64 lg:hidden transition-transform duration-300 bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200/10"
         style={{ transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)' }}
       >
-        <SidebarContent mobile />
+        <SidebarContent 
+          mobile 
+          isSuperAdmin={isSuperAdmin} 
+          hospitalName={hospitalName} 
+          setMobileOpen={setMobileOpen} 
+          navItems={navItems} 
+          handleLogout={handleLogout} 
+        />
       </aside>
 
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-64 shrink-0 bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200/10 h-screen sticky top-0">
-        <SidebarContent />
+        <SidebarContent 
+          isSuperAdmin={isSuperAdmin} 
+          hospitalName={hospitalName} 
+          setMobileOpen={setMobileOpen} 
+          navItems={navItems} 
+          handleLogout={handleLogout} 
+        />
       </aside>
 
       {/* Main */}

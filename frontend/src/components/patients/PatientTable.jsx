@@ -122,7 +122,9 @@ const PatientTable = ({
   const [page,   setPage]   = useState(1);
 
   // Reset page when filter/date/search changes
-  useEffect(() => { setPage(1); }, [statusFilter, selectedDate, search]);
+  useEffect(() => { 
+    setTimeout(() => setPage(1), 0); 
+  }, [statusFilter, selectedDate, search]);
 
   // Filter by status (from stats bar) + search
   const filtered = rows.filter(row => {
@@ -144,7 +146,7 @@ const PatientTable = ({
   const handleSearch = useCallback((e) => {
     setSearch(e.target.value);
     setPage(1);
-  }, []);
+  }, [setPage]);
 
   const dateLabel = selectedDate
     ? format(selectedDate, 'EEEE, dd MMM yyyy')

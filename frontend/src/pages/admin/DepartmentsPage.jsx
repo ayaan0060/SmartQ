@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Plus, Pencil, Trash2, Network, ToggleLeft, ToggleRight,
   CheckCircle2, Clock, DollarSign, Hash, AlertCircle,
@@ -48,17 +48,19 @@ export default function DepartmentsPage() {
   const [modal, setModal]       = useState({ open: false, mode: 'create', data: EMPTY });
   const [formErrors, setFormErrors] = useState({});
 
-  const load = () => {
+  const load = useCallback(() => {
     const hospitalId = getHospitalId();
     if (!hospitalId) { setServices([]); setLoading(false); return; }
-    setLoading(true);
     api.get(`/services/${hospitalId}`)
       .then(r => { const d = r.data?.data; setServices(Array.isArray(d) ? d : []); })
       .catch(() => toast.error('Failed to load departments'))
       .finally(() => setLoading(false));
-  };
+  }, [getHospitalId]);
 
-  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const t = setTimeout(() => load(), 0);
+    return () => clearTimeout(t);
+  }, [load]);
 
   const validateForm = () => {
     const e = {};

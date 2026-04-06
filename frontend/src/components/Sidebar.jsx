@@ -10,9 +10,9 @@ import { useAuthStore } from '../features/auth/useAuthStore';
 import { AuthService } from '../features/auth/AuthService';
 
 const NAV_ITEMS = [
-  { icon: LayoutDashboard, label: 'Dashboard',     to: '/dashboard' },
-  { icon: Clock,           label: 'Queue',          to: '/queue' },
-  { icon: History,         label: 'Token History',  to: '/history' },
+  { icon: LayoutDashboard, label: 'Dashboard',     to: '/patient/dashboard' },
+  { icon: Clock,           label: 'Queue',          to: '/patient/queue' },
+  { icon: History,         label: 'Token History',  to: '/patient/history' },
   { icon: Calendar,        label: 'Appointments',   to: '/appointments' },
   { icon: BarChart2,       label: 'Analytics',      to: '/payments' },
   { icon: Settings,        label: 'Settings',       to: '/settings' },

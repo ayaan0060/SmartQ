@@ -67,12 +67,6 @@ export default function StaffPage() {
     catch (e) { toast.error(e.displayMessage || 'Failed to update availability'); }
   };
 
-  const handleDeleteDoctor = async (row) => {
-    if (!row?._id) return;
-    if (!window.confirm(`Remove ${row.name} from the hospital?`)) return;
-    try { await api.delete(`/doctors/${row._id}`); toast.success('Doctor removed'); refetch(); }
-    catch (e) { toast.error(e.displayMessage || 'Failed to delete doctor'); }
-  };
 
   const inputCls = 'w-full rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none bg-surface-container-highest border-none focus:ring-2 focus:ring-primary/20 transition-all';
 
@@ -152,7 +146,7 @@ export default function StaffPage() {
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="relative">
-                      <div className={`w-16 h-16 rounded-2xl overflow-hidden bg-surface-container flex items-center justify-center text-2xl font-black text-on-primary bg-primary ${!isOnline ? 'grayscale' : ''}`}>
+                      <div className={`w-16 h-16 rounded-2xl overflow-hidden bg-surface-container flex items-center justify-center text-2xl font-black text-on-primary ${!isOnline ? 'grayscale' : ''}`}>
                         {staff.name?.charAt(0)?.toUpperCase() || '?'}
                       </div>
                       <span className={`absolute -bottom-1 -right-1 w-4 h-4 border-2 border-surface-container-lowest rounded-full ${getStatusColor(staff)}`} />

@@ -2,23 +2,21 @@ import React, { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Bell, Moon, Sun, AlertTriangle, User, Menu, X, LogOut,
+  Moon, Sun, AlertTriangle, Menu, X, LogOut,
   LayoutDashboard, Clock, Calendar, Settings,
 } from 'lucide-react';
 import { useAuthStore } from '../features/auth/useAuthStore';
-import { useHospitalStore } from '../features/hospital/useHospitalStore';
 import { AuthService } from '../features/auth/AuthService';
 import { useTheme } from '../hooks/useTheme';
 
 const NAV_LINKS = [
-  { label: 'Dashboard',    to: '/dashboard' },
-  { label: 'Queue',        to: '/history' },
+  { label: 'Dashboard',    to: '/patient/dashboard' },
+  { label: 'Queue',        to: '/patient/queue' },
   { label: 'Appointments', to: '/appointments' },
 ];
 
 export default function Navbar() {
   const { user, isAuthenticated } = useAuthStore();
-  const { selectedHospital } = useHospitalStore();
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -85,18 +83,6 @@ export default function Navbar() {
           >
             {theme === 'dark' ? <Sun size={18} className="text-on-surface-variant" /> : <Moon size={18} className="text-on-surface-variant" />}
           </motion.button>
-
-          {/* Notifications */}
-          {isAuthenticated && (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="relative w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors"
-            >
-              <Bell size={18} className="text-on-surface-variant" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full" />
-            </motion.button>
-          )}
 
           {/* User avatar */}
           {isAuthenticated ? (

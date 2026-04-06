@@ -113,7 +113,7 @@ function AddTokenModal({ onClose, onAdded, hospitalId }) {
 
 export default function ReceptionistPage() {
   const { user, logout, hospitalName } = useAuthStore();
-  const { tokens, connected, setTokens, addToken, updateToken, removeToken, setConnected, getWaiting, getInProgress, completedCount } = useQueueStore();
+  const { connected, setTokens, addToken, updateToken, removeToken, setConnected, getWaiting, getInProgress, completedCount } = useQueueStore();
   const navigate = useNavigate();
   const hospitalId = user?.hospitalId;
   const [showAddModal, setShowAddModal] = useState(false);

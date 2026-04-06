@@ -14,7 +14,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import socket from '../lib/socket';
-import { haversineDistanceKm } from '../services/osrmService';
 
 const OSRM_BASE = 'https://router.project-osrm.org/route/v1';
 
@@ -149,7 +148,9 @@ export function usePatientTracking(requestId, initialData) {
       });
       // Fetch initial route if ambulance location is known
       if (initialData.ambulanceLocation?.lat) {
-        fetchRoute(initialData.ambulanceLocation.lat, initialData.ambulanceLocation.lng);
+        setTimeout(() => {
+          fetchRoute(initialData.ambulanceLocation.lat, initialData.ambulanceLocation.lng);
+        }, 0);
       }
     }
 

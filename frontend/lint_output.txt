@@ -1,0 +1,333 @@
+
+> frontend@0.0.0 lint
+> eslint .
+
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/components/Button.jsx
+  2:1  warning  Unused eslint-disable directive (no problems were reported from 'no-unused-vars')
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/components/DirectionsModal.jsx
+  78:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  76 |
+  77 |     fetchedRef.current = true;
+> 78 |     setRouteLoading(true);
+     |     ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  79 |     setRouteError(null);
+  80 |
+  81 |     fetchWalkingRoute(userLocation.lat, userLocation.lng, hLat, hLng)   react-hooks/set-state-in-effect
+  96:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  94 |     if (!isOpen) {
+  95 |       fetchedRef.current = false;
+> 96 |       setRoute(null);
+     |       ^^^^^^^^ Avoid calling setState() directly within an effect
+  97 |       setRouteError(null);
+  98 |       setRouteLoading(false);
+  99 |       setNavActive(false);  react-hooks/set-state-in-effect
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/components/EmergencyButton.jsx
+  5:43  error  'hospitalId' is defined but never used  no-unused-vars
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/components/Navbar.jsx
+  21:11  error  'selectedHospital' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/components/PaymentModal.jsx
+  2:1  warning  Unused eslint-disable directive (no problems were reported from 'no-unused-vars')
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/components/home/SOSModal.jsx
+   71:5   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  69 |     if (!isOpen || didDetect.current) return;
+  70 |     didDetect.current = true;
+> 71 |     setPhase('detecting');
+     |     ^^^^^^^^ Avoid calling setState() directly within an effect
+  72 |     setNearest(null);
+  73 |     setErrorMsg('');
+  74 |     setGpsErrorCode(null);                                        react-hooks/set-state-in-effect
+  109:7   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  107 |       didDetect.current = false;
+  108 |       if (countdownRef.current) clearInterval(countdownRef.current);
+> 109 |       setCountdown(null);
+      |       ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  110 |       setPhase('detecting');
+  111 |     }
+  112 |   }, [isOpen]);                     react-hooks/set-state-in-effect
+  167:16  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  165 |       const lat  = patientCoords?.lat;
+  166 |       const lng  = patientCoords?.lng;
+> 167 |       if (hId) fireRequest(hId, lat, lng);
+      |                ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  168 |     }
+  169 |   }, [countdown, phase, nearest, patientCoords, fireRequest]);
+  170 |  react-hooks/set-state-in-effect
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/components/patients/PatientTable.jsx
+  125:21  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  123 |
+  124 |   // Reset page when filter/date/search changes
+> 125 |   useEffect(() => { setPage(1); }, [statusFilter, selectedDate, search]);
+      |                     ^^^^^^^ Avoid calling setState() directly within an effect
+  126 |
+  127 |   // Filter by status (from stats bar) + search
+  128 |   const filtered = rows.filter(row => {  react-hooks/set-state-in-effect
+  144:36  error  Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `setPage`, but the source dependencies were []. Inferred dependency not present in source.
+
+  142 |   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  143 |
+> 144 |   const handleSearch = useCallback((e) => {
+      |                                    ^^^^^^^^
+> 145 |     setSearch(e.target.value);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 146 |     setPage(1);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 147 |   }, []);
+      | ^^^^ Could not preserve existing manual memoization
+  148 |
+  149 |   const dateLabel = selectedDate
+  150 |     ? format(selectedDate, 'EEEE, dd MMM yyyy')                                                               react-hooks/preserve-manual-memoization
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/components/patients/VisitHistoryDrawer.jsx
+  13:28  error  'useCallback' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/components/staff/StaffDirectoryTable.jsx
+  11:3  error  'onDeactivateDoctor' is defined but never used  no-unused-vars
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/components/ui/StatCard.jsx
+  20:9  error  'glow' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/hooks/usePatientTracking.js
+   17:10  error  'haversineDistanceKm' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            no-unused-vars
+  152:9   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  150 |       // Fetch initial route if ambulance location is known
+  151 |       if (initialData.ambulanceLocation?.lat) {
+> 152 |         fetchRoute(initialData.ambulanceLocation.lat, initialData.ambulanceLocation.lng);
+      |         ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  153 |       }
+  154 |     }
+  155 |  react-hooks/set-state-in-effect
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/layouts/AdminLayout.jsx
+  130:10  error  Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+  128 |         style={{ transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)' }}
+  129 |       >
+> 130 |         <SidebarContent mobile />
+      |          ^^^^^^^^^^^^^^ This component is created during render
+  131 |       </aside>
+  132 |
+  133 |       {/* Desktop sidebar */}
+
+   37 |   });
+   38 |
+>  39 |   const SidebarContent = ({ mobile = false }) => (
+      |                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+>  40 |     <div className="flex flex-col h-full">
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  41 |       {/* Logo */}
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 115 |     </div>
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 116 |   );
+      | ^^^^ The component is created during render here
+  117 |
+  118 |   return (
+  119 |     <div className="flex min-h-screen bg-background">                                                                  react-hooks/static-components
+  135:10  error  Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+  133 |       {/* Desktop sidebar */}
+  134 |       <aside className="hidden lg:flex flex-col w-64 shrink-0 bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200/10 h-screen sticky top-0">
+> 135 |         <SidebarContent />
+      |          ^^^^^^^^^^^^^^ This component is created during render
+  136 |       </aside>
+  137 |
+  138 |       {/* Main */}
+
+   37 |   });
+   38 |
+>  39 |   const SidebarContent = ({ mobile = false }) => (
+      |                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+>  40 |     <div className="flex flex-col h-full">
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  41 |       {/* Logo */}
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 115 |     </div>
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 116 |   );
+      | ^^^^ The component is created during render here
+  117 |
+  118 |   return (
+  119 |     <div className="flex min-h-screen bg-background">  react-hooks/static-components
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/layouts/sidebars/DoctorSidebar.jsx
+  16:25  error  'hospitalName' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/layouts/sidebars/NurseSidebar.jsx
+  15:11  error  'user' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/layouts/sidebars/ReceptionistSidebar.jsx
+  16:11  error  'user' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/pages/AdminDashboard.jsx
+  4:1  warning  Unused eslint-disable directive (no problems were reported from 'no-unused-vars')
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/pages/DisplayBoard.jsx
+  26:10  error  'current' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 no-unused-vars
+  28:10  error  'completed' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               no-unused-vars
+  46:13  error  Empty block statement                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-empty
+  50:5   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  48 |
+  49 |   useEffect(() => {
+> 50 |     loadQueue();
+     |     ^^^^^^^^^ Avoid calling setState() directly within an effect
+  51 |     const socket = connectSocket(hospitalId);
+  52 |     socket.on('connect',    () => setConnected(true));
+  53 |     socket.on('disconnect', () => setConnected(false));  react-hooks/set-state-in-effect
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/pages/DoctorPortal.jsx
+   64:10   error  'history' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  114:105  error  Empty block statement                                                                    no-empty
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/pages/EmergencyTrackingPage.jsx
+    8:25  error    'hospitalIcon' is defined but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+  109:45  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/pages/ForHospitals.jsx
+  3:1  warning  Unused eslint-disable directive (no problems were reported from 'no-unused-vars')
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/pages/HospitalRegister.jsx
+    3:41  warning  Unused eslint-disable directive (no problems were reported from 'no-unused-vars')
+   14:1   warning  Unused eslint-disable directive (no problems were reported from 'no-unused-vars')
+   36:1   warning  Unused eslint-disable directive (no problems were reported from 'no-unused-vars')
+  142:11  error    'setAuth' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/pages/NotFound.jsx
+  4:1  warning  Unused eslint-disable directive (no problems were reported from 'no-unused-vars')
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/pages/ReceptionistPage.jsx
+  116:11  error  'tokens' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/pages/Register.jsx
+  30:10  error  'verifiedPhone' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/pages/TokenStatus.jsx
+   5:1   warning  Unused eslint-disable directive (no problems were reported from 'no-unused-vars')
+  85:34  error    'tokenNumber' is defined but never used                                            no-unused-vars
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/pages/admin/AdminDashboardPage.jsx
+  38:38  warning  React Hook useEffect has a missing dependency: 'fetchStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  50:6   warning  React Hook useEffect has a missing dependency: 'fetchStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/pages/admin/AmbulancesPage.jsx
+  59:26  error  'user' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/pages/admin/DepartmentsPage.jsx
+  61:21  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  59 |   };
+  60 |
+> 61 |   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+     |                     ^^^^ Avoid calling setState() directly within an effect
+  62 |
+  63 |   const validateForm = () => {
+  64 |     const e = {};  react-hooks/set-state-in-effect
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/pages/admin/HospitalDetailPage.jsx
+  290:5  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/pages/admin/HospitalsPage.jsx
+   54:3   warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+  208:19  warning  Unused eslint-disable directive (no problems were reported from 'no-unused-vars')
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/pages/admin/PatientsPage.jsx
+  36:10  error  'loading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     no-unused-vars
+  47:21  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  45 |   }, []);
+  46 |
+> 47 |   useEffect(() => { load(); }, [load]);
+     |                     ^^^^ Avoid calling setState() directly within an effect
+  48 |
+  49 |   // ── New feature state ────────────────────────────────────────────────────────
+  50 |   const [selectedDate,    setSelectedDate]    = useState(new Date());  react-hooks/set-state-in-effect
+  84:9   error  'handleDelete' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-unused-vars
+
+/Users/ayaanwani/Desktop/SmartQ copy/frontend/src/pages/admin/QueuePage.jsx
+  99:9  warning  Unused eslint-disable directive (no problems were reported from 'no-unused-vars')
+
+✖ 51 problems (35 errors, 16 warnings)
+  0 errors and 14 warnings potentially fixable with the `--fix` option.
+

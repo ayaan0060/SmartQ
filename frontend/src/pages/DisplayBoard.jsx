@@ -23,9 +23,7 @@ const MOCK_QUEUE = [
 
 export default function DisplayBoard() {
   const { hospitalId } = useParams();
-  const [current, setCurrent]     = useState(null);
   const [waiting, setWaiting]     = useState([]);
-  const [completed, setCompleted] = useState(0);
   const [connected, setConnected] = useState(false);
   const [hospitalName, setHospitalName] = useState('');
   const [time, setTime]           = useState(new Date());
@@ -40,20 +38,22 @@ export default function DisplayBoard() {
       const r = await api.get(`/queue/display/${hospitalId}`);
       const tokens = r.data.data.tokens || [];
       setHospitalName(r.data.data.hospitalName || '');
-      setCurrent(tokens.find(t => t.status === 'in-progress') || null);
       setWaiting(tokens.filter(t => t.status === 'waiting').slice(0, 6));
-      setCompleted(r.data.data.completedCount || 0);
-    } catch {}
+    } catch (err) {
+      // Quietly fail as this is a live display board
+      console.error('Failed to load queue:', err);
+    }
   }, [hospitalId]);
 
   useEffect(() => {
-    loadQueue();
+    const t = setTimeout(() => loadQueue(), 0);
     const socket = connectSocket(hospitalId);
     socket.on('connect',    () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
     const handleUpdate = () => loadQueue();
     ['queue:add', 'queue:update', 'queue:priority-change', 'queue:remove'].forEach(e => socket.on(e, handleUpdate));
     return () => {
+      clearTimeout(t);
       const s = getSocket();
       if (s) ['queue:add', 'queue:update', 'queue:priority-change', 'queue:remove'].forEach(e => s.off(e, handleUpdate));
     };
@@ -91,7 +91,7 @@ export default function DisplayBoard() {
         </div>
       </nav>
 
-      <main className="flex-grow pt-20 pb-6 px-8 grid grid-cols-12 gap-8">
+      <main className="grow pt-20 pb-6 px-8 grid grid-cols-12 gap-8">
         {/* Left: Now Serving */}
         <div className="col-span-8 flex flex-col gap-6">
           <div className="flex items-end justify-between px-2">
@@ -149,7 +149,7 @@ export default function DisplayBoard() {
           </div>
 
           {/* Announcements */}
-          <div className="flex-grow bg-surface-container-low rounded-2xl p-6 flex flex-col gap-4">
+          <div className="grow bg-surface-container-low rounded-2xl p-6 flex flex-col gap-4">
             <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Clinic Announcements</h3>
             <div className="flex gap-4 p-4 bg-surface-container-lowest rounded-xl">
               <Megaphone size={20} className="text-primary shrink-0" />

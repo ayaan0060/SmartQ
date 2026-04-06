@@ -8,7 +8,6 @@ export default function StaffDirectoryTable({
   errorMessage,
   onEditDoctor,
   onEditPersonnel,
-  onDeactivateDoctor,
   onDeactivatePersonnel,
   onToggleDoctorAvailability,
   onDeleteDoctor,

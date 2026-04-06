@@ -11,7 +11,10 @@ node_modules
 dist
 dist-ssr
 # Local-only environment overrides
+.env
+.env.*
 *.local
+!.env.example
 
 # Editor directories and files
 .vscode/*

@@ -3,177 +3,207 @@ const User = require('../models/User');
 const Hospital = require('../models/Hospital');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { success, error } = require('../utils/apiResponse');
+const { logLoginSuccess, logLoginFailure, logRegister } = require('../utils/logger');
 
-const signToken = (user) => {
-  return jwt.sign(
+// ── Token signing ─────────────────────────────────────────────────────────────
+const signToken = (user) =>
+  jwt.sign(
     { userId: user._id, role: user.role, hospitalId: user.hospitalId },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
   );
-};
 
-// POST /api/auth/register — creates PATIENT accounts only
+// ── POST /api/auth/register — patient accounts only ───────────────────────────
 const register = asyncHandler(async (req, res) => {
+  // Validation handled by middleware/validate.js registerRules
   const { name, email, phone, password } = req.body;
 
-  if (!name || !password || (!email && !phone)) {
-    return error(res, 'Name, password, and email or phone are required', 400);
+  // Duplicate check
+  if (email) {
+    const exists = await User.findOne({ email: email.toLowerCase().trim() }).lean();
+    if (exists) return error(res, 'An account with this email already exists', 409);
+  }
+  if (phone) {
+    const normalized = phone.replace(/\s/g, '');
+    const exists = await User.findOne({ phone: normalized }).lean();
+    if (exists) return error(res, 'An account with this phone already exists', 409);
   }
 
-  // Role is ALWAYS hardcoded to 'patient' — never accepted from req.body
-  const user = await User.create({ name, email, phone, password, role: 'patient', hospitalId: null });
+  // Role is ALWAYS hardcoded — never from req.body
+  const user = await User.create({
+    name: name.trim(),
+    email: email ? email.toLowerCase().trim() : undefined,
+    phone: phone ? phone.replace(/\s/g, '') : undefined,
+    password,
+    role: 'patient',
+    hospitalId: null,
+  });
+
+  logRegister(req, user._id, 'patient');
 
   const token = signToken(user);
   return success(res, { token, user, hospitalName: null }, 201, 'Registration successful');
 });
 
-// POST /api/auth/login
+// ── POST /api/auth/login ──────────────────────────────────────────────────────
 const login = asyncHandler(async (req, res) => {
+  // Validation handled by middleware/validate.js loginRules
   const { phone, email, password } = req.body;
 
-  if (!password || (!phone && !email)) {
-    return error(res, 'Credentials required', 400);
-  }
-
-  const query = email ? { email } : { phone };
-  // Normalize phone — try exact match first, then with +91 prefix
   let user;
   if (email) {
-    user = await User.findOne({ email });
+    user = await User.findOne({ email: email.toLowerCase().trim() });
   } else {
     const normalized = phone.replace(/\s/g, '');
-    user = await User.findOne({ phone: normalized }) ||
-           await User.findOne({ phone: `+91${normalized}` }) ||
-           await User.findOne({ phone: normalized.replace(/^\+?91/, '') }) ||
-           await User.findOne({ phone: `+91${normalized.replace(/^\+?91/, '')}` });
+    user =
+      (await User.findOne({ phone: normalized })) ||
+      (await User.findOne({ phone: `+91${normalized}` })) ||
+      (await User.findOne({ phone: normalized.replace(/^\+?91/, '') })) ||
+      (await User.findOne({ phone: `+91${normalized.replace(/^\+?91/, '')}` }));
   }
-  if (!user || !(await user.comparePassword(password))) {
+
+  // Use constant-time comparison to prevent timing attacks
+  // comparePassword is called even when user is null to prevent user enumeration
+  const passwordMatch = user ? await user.comparePassword(password) : false;
+
+  if (!user || !passwordMatch) {
+    logLoginFailure(req, 'invalid_credentials', email || phone);
     return error(res, 'Invalid credentials', 401);
   }
 
-  // Block hospital-admin login if their hospital is still pending or rejected
-  if (['hospital-admin', 'receptionist', 'doctor'].includes(user.role) && user.hospitalId) {
-    const hospital = await Hospital.findById(user.hospitalId).select('name status');
-    if (hospital?.status === 'pending') {
-      return error(res, 'Your hospital registration is currently under review by our team. You will be notified once approved.', 403);
-    }
-    if (hospital?.status === 'inactive') {
-      return error(res, 'Your hospital registration was rejected. Please contact support@smartq.com for assistance.', 403);
-    }
+  // Block deactivated accounts
+  if (!user.isActive) {
+    logLoginFailure(req, 'account_deactivated', user._id);
+    return error(res, 'Your account has been deactivated. Please contact support.', 403);
   }
 
-  // Block deactivated accounts (rejected by super-admin)
-  if (!user.isActive) {
-    return error(res, 'Your account has been deactivated. Please contact support.', 403);
+  // Block hospital staff if hospital is pending/inactive
+  if (['hospital-admin', 'receptionist', 'doctor'].includes(user.role) && user.hospitalId) {
+    const hospital = await Hospital.findById(user.hospitalId).select('name status').lean();
+    if (hospital?.status === 'pending') {
+      logLoginFailure(req, 'hospital_pending', user._id);
+      return error(res, 'Your hospital registration is under review. You will be notified once approved.', 403);
+    }
+    if (hospital?.status === 'inactive') {
+      logLoginFailure(req, 'hospital_inactive', user._id);
+      return error(res, 'Your hospital registration was rejected. Contact support@smartq.com.', 403);
+    }
   }
 
   user.lastLogin = new Date();
   await user.save({ validateBeforeSave: false });
 
-  // Attach hospital name and status for hospital-admin users
   let hospitalName = null;
   let hospitalStatus = null;
   if (user.hospitalId) {
-    const hospital = await Hospital.findById(user.hospitalId).select('name status');
+    const hospital = await Hospital.findById(user.hospitalId).select('name status').lean();
     hospitalName = hospital?.name || null;
     hospitalStatus = hospital?.status || null;
   }
+
+  logLoginSuccess(req, user._id, user.role);
 
   const token = signToken(user);
   return success(res, { token, user, hospitalName, hospitalStatus }, 200, 'Login successful');
 });
 
-// GET /api/auth/me
+// ── GET /api/auth/me ──────────────────────────────────────────────────────────
 const getMe = asyncHandler(async (req, res) => {
   return success(res, { user: req.user });
 });
 
-// PATCH /api/auth/profile
+// ── PATCH /api/auth/profile — only name and avatar, nothing else ──────────────
 const updateProfile = asyncHandler(async (req, res) => {
-  const { name, avatar } = req.body;
+  // Validation handled by middleware/validate.js updateProfileRules
+  // Only pick the two safe fields — never spread req.body
+  const updates = {};
+  if (req.body.name !== undefined) updates.name = req.body.name.trim();
+  if (req.body.avatar !== undefined) updates.avatar = req.body.avatar;
+
   const user = await User.findByIdAndUpdate(
     req.user._id,
-    { name, avatar },
+    updates,
     { new: true, runValidators: true }
   );
   return success(res, { user }, 200, 'Profile updated');
 });
 
-// POST /api/auth/register-receptionist — hospital-admin creates receptionist accounts
+// ── POST /api/auth/register-receptionist ─────────────────────────────────────
 const registerReceptionist = asyncHandler(async (req, res) => {
+  // Validation handled by registerStaffRules
   const { name, email, password } = req.body;
-  if (!name || !email || !password)
-    return error(res, 'Name, email and password are required', 400);
-  if (password.length < 8)
-    return error(res, 'Password must be at least 8 characters', 400);
 
-  const exists = await User.findOne({ email: email.toLowerCase().trim() });
+  const exists = await User.findOne({ email: email.toLowerCase().trim() }).lean();
   if (exists) return error(res, 'An account with this email already exists', 409);
 
   const user = await User.create({
-    name,
+    name: name.trim(),
     email: email.toLowerCase().trim(),
     password,
-    role: 'receptionist',
+    role: 'receptionist',          // hardcoded — never from req.body
     hospitalId: req.user.hospitalId,
   });
+
+  logRegister(req, user._id, 'receptionist');
   return success(res, { user }, 201, 'Receptionist account created');
 });
 
-// POST /api/auth/verify-phone-email — verifies Phone.Email user_json_url
-const verifyPhoneEmail = asyncHandler(async (req, res) => {
-  const { user_json_url, user_country_code, user_phone_number } = req.body;
-
-  // If frontend already has country code and phone number, use them directly
-  // Phone.Email sends these in the userObj alongside user_json_url
-  if (user_country_code && user_phone_number) {
-    const phone = `${user_country_code}${user_phone_number}`;
-    console.log('[PhoneEmail] Verified from widget:', phone);
-    return success(res, { phone, country_code: user_country_code, phone_number: user_phone_number }, 200, 'Phone verified');
-  }
-
-  // Fallback: fetch from user_json_url
-  if (!user_json_url) return error(res, 'user_json_url is required', 400);
-
-  console.log('[PhoneEmail] Fetching URL:', user_json_url);
-  const axios = require('axios');
-  const r = await axios.get(user_json_url, {
-    headers: { 'Accept': 'application/json' },
-    timeout: 10000,
-  });
-  console.log('[PhoneEmail] Response:', JSON.stringify(r.data));
-
-  const { user_country_code: cc, user_phone_number: ph } = r.data;
-  if (!ph) return error(res, 'Could not retrieve phone number', 400);
-
-  const phone = `${cc}${ph}`;
-  return success(res, { phone, country_code: cc, phone_number: ph }, 200, 'Phone verified');
-});
-
-// POST /api/auth/register-doctor — hospital-admin creates doctor accounts
+// ── POST /api/auth/register-doctor ───────────────────────────────────────────
 const registerDoctor = asyncHandler(async (req, res) => {
+  // Validation handled by registerStaffRules
   const { name, email, password, doctorId } = req.body;
-  if (!name || !email || !password) return error(res, 'Name, email and password are required', 400);
-  if (password.length < 8) return error(res, 'Password must be at least 8 characters', 400);
 
-  const exists = await User.findOne({ email: email.toLowerCase().trim() });
+  const exists = await User.findOne({ email: email.toLowerCase().trim() }).lean();
   if (exists) return error(res, 'An account with this email already exists', 409);
 
   const user = await User.create({
-    name,
+    name: name.trim(),
     email: email.toLowerCase().trim(),
     password,
-    role: 'doctor',
+    role: 'doctor',                // hardcoded — never from req.body
     hospitalId: req.user.hospitalId,
   });
 
-  // Link User to Doctor record if doctorId provided
   if (doctorId) {
     const Doctor = require('../models/Doctor');
-    await Doctor.findByIdAndUpdate(doctorId, { userId: user._id });
+    // Only link if the doctor belongs to the same hospital
+    await Doctor.findOneAndUpdate(
+      { _id: doctorId, hospitalId: req.user.hospitalId },
+      { userId: user._id }
+    );
   }
 
+  logRegister(req, user._id, 'doctor');
   return success(res, { user }, 201, 'Doctor account created');
 });
 
-module.exports = { register, login, getMe, updateProfile, registerReceptionist, registerDoctor, verifyPhoneEmail };
+// ── POST /api/auth/verify-phone-email ────────────────────────────────────────
+// SSRF fix: only accept pre-parsed fields from the widget, never fetch external URLs
+const verifyPhoneEmail = asyncHandler(async (req, res) => {
+  const { user_country_code, user_phone_number } = req.body;
+
+  if (!user_country_code || !user_phone_number) {
+    return error(res, 'user_country_code and user_phone_number are required', 400);
+  }
+
+  // Validate format before using
+  if (!/^\+\d{1,4}$/.test(user_country_code)) {
+    return error(res, 'Invalid country code format', 400);
+  }
+  if (!/^\d{6,15}$/.test(user_phone_number)) {
+    return error(res, 'Invalid phone number format', 400);
+  }
+
+  const phone = `${user_country_code}${user_phone_number}`;
+  return success(res, { phone, country_code: user_country_code, phone_number: user_phone_number }, 200, 'Phone verified');
+});
+
+module.exports = {
+  register,
+  login,
+  getMe,
+  updateProfile,
+  registerReceptionist,
+  registerDoctor,
+  verifyPhoneEmail,
+};

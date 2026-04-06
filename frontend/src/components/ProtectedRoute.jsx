@@ -24,18 +24,27 @@ const PendingScreen = () => (
   </div>
 );
 
-const ProtectedRoute = ({ children, adminOnly = false, requireHospital = false }) => {
+const ProtectedRoute = ({ children, adminOnly = false, requireHospital = false, allowedRoles = [] }) => {
   const { user } = useAuthStore();
   const selectedHospital = useHospitalStore((state) => state.selectedHospital);
 
   if (!user) return <Navigate to="/login" replace />;
 
-  // Block pending/inactive hospital-admin, receptionist, doctor from accessing portal
-  if (['hospital-admin', 'receptionist', 'doctor'].includes(user.role)) {
+  // Block pending/inactive hospital-staff from accessing portal
+  if (['hospital-admin', 'receptionist', 'doctor', 'nurse'].includes(user.role)) {
     const { hospitalStatus } = useAuthStore.getState();
     if (hospitalStatus === 'pending' || hospitalStatus === 'inactive') {
       return <PendingScreen />;
     }
+  }
+
+  // Role-based access control
+  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+    // If user is logged in but doesn't have the right role, send to their respective dashboard
+    if (user.role === 'patient') return <Navigate to="/patient/dashboard" replace />;
+    if (user.role === 'doctor') return <Navigate to="/doctor" replace />;
+    if (['receptionist', 'nurse', 'staff'].includes(user.role)) return <Navigate to="/staff" replace />;
+    return <Navigate to="/select-hospital" replace />;
   }
 
   if (adminOnly && !ADMIN_ROLES.includes(user.role)) {

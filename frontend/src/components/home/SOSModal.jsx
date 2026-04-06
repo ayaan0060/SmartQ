@@ -64,9 +64,7 @@ const SOSModal = ({ isOpen, onClose }) => {
     };
   }, []);
 
-  // ── run detection when modal opens ────────────────────────────────────────
-  useEffect(() => {
-    if (!isOpen || didDetect.current) return;
+  const runDetection = useCallback(() => {
     didDetect.current = true;
     setPhase('detecting');
     setNearest(null);
@@ -77,7 +75,6 @@ const SOSModal = ({ isOpen, onClose }) => {
     findNearest()
       .then(result => {
         if (!result) {
-          // No hospitals with coords — load full list for fallback dropdown
           return HospitalService.getHospitals().then(list => {
             setAllHospitals(list);
             setErrorMsg('Cannot auto-detect nearest hospital — no GPS coordinates set for any hospital. Please select one manually.');
@@ -90,24 +87,32 @@ const SOSModal = ({ isOpen, onClose }) => {
         setPhase('confirm');
       })
       .catch(err => {
-        const code = err?.code; // GeolocationPositionError code
+        const code = err?.code;
         setGpsErrorCode(code || null);
         setErrorMsg(gpsMsg(code));
-        // Load hospitals for fallback dropdown
         HospitalService.getHospitals()
           .then(list => setAllHospitals(list))
           .catch(() => {});
         setPhase('error');
       });
-  }, [isOpen, findNearest]);
+  }, [findNearest]);
+
+  // ── run detection when modal opens ────────────────────────────────────────
+  useEffect(() => {
+    if (isOpen && !didDetect.current) {
+      setTimeout(runDetection, 0);
+    }
+  }, [isOpen, runDetection]);
 
   // ── reset when closed ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!isOpen) {
-      didDetect.current = false;
-      if (countdownRef.current) clearInterval(countdownRef.current);
-      setCountdown(null);
-      setPhase('detecting');
+      setTimeout(() => {
+        didDetect.current = false;
+        if (countdownRef.current) clearInterval(countdownRef.current);
+        setCountdown(null);
+        setPhase('detecting');
+      }, 0);
     }
   }, [isOpen]);
 
@@ -164,7 +169,9 @@ const SOSModal = ({ isOpen, onClose }) => {
       const hId  = nearest?.hospital?._id;
       const lat  = patientCoords?.lat;
       const lng  = patientCoords?.lng;
-      if (hId) fireRequest(hId, lat, lng);
+      if (hId) {
+        setTimeout(() => fireRequest(hId, lat, lng), 0);
+      }
     }
   }, [countdown, phase, nearest, patientCoords, fireRequest]);
 

@@ -61,7 +61,6 @@ export default function DoctorPortal() {
 
   const [doctor, setDoctor]       = useState(null);
   const [active, setActive]       = useState([]);
-  const [history, setHistory]     = useState([]);
   const [connected, setConnected] = useState(false);
   const [loading, setLoading]     = useState(true);
   const [toggling, setToggling]   = useState(false);
@@ -74,8 +73,8 @@ export default function DoctorPortal() {
       const r = await api.get('/queue/doctor');
       setDoctor(r.data.data.doctor);
       setActive(r.data.data.active || []);
-      setHistory(r.data.data.history || []);
     } catch (err) {
+      console.error('Queue fetch failed:', err);
       toast.error(err?.response?.data?.message || 'Failed to load queue');
     } finally {
       setLoading(false);
@@ -83,12 +82,13 @@ export default function DoctorPortal() {
   }, []);
 
   useEffect(() => {
-    loadQueue();
+    const timer = setTimeout(() => loadQueue(), 0);
     const socket = connectSocket(user?.hospitalId);
     socket.on('connect',    () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
     ['queue:add', 'queue:update', 'queue:priority-change', 'queue:remove'].forEach(e => socket.on(e, loadQueue));
     return () => {
+      clearTimeout(timer);
       const s = getSocket();
       if (s) ['queue:add', 'queue:update', 'queue:priority-change', 'queue:remove'].forEach(e => s.off(e, loadQueue));
     };
@@ -102,16 +102,21 @@ export default function DoctorPortal() {
   const toggleAvailability = async () => {
     if (!doctor) return;
     setToggling(true);
-    try {
-      const r = await api.patch(`/doctors/${doctor._id}/availability`);
-      setDoctor(d => ({ ...d, isAvailable: r.data.data.doctor.isAvailable }));
-      toast.success(`You are now ${r.data.data.doctor.isAvailable ? 'Available' : 'Unavailable'}`);
-    } catch { toast.error('Failed to update availability'); }
+    try { 
+      await api.patch(`/doctors/${doctor._id}`, { isAvailable: !doctor.isAvailable });
+      await loadQueue();
+    } catch (_err) { 
+      console.error('Availability update failed:', _err);
+      toast.error('Failed to update availability'); 
+    }
     finally { setToggling(false); }
   };
 
   const handleLogout = async () => {
-    if (doctor?._id) { try { await api.patch(`/doctors/${doctor._id}`, { isAvailable: false }); } catch {} }
+    if (doctor?._id) { 
+      try { await api.patch(`/doctors/${doctor._id}`, { isAvailable: false }); } 
+      catch (err) { console.error('Failed to update availability on logout:', err); } 
+    }
     logout(); navigate('/login');
   };
 

@@ -175,7 +175,7 @@ TrackingView.displayName = 'TrackingView';
 
 // ── AmbulancePage ─────────────────────────────────────────────────────────────
 const AmbulancePage = () => {
-  const { user }             = useAuthStore();
+  const { user: _user }      = useAuthStore();
   const { selectedHospital } = useHospitalStore();
   const navigate             = useNavigate();
 

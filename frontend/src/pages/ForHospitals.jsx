@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import {
   Building2, Clock, Users, TrendingUp, ShieldCheck,
@@ -306,19 +305,9 @@ const ForHospitals = () => {
           <p className="text-blue-100 text-lg max-w-xl">
             Join SmartQ today — it's completely free to register. Your patients will thank you.
           </p>
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <Link
-              to="/register-hospital"
-              id="cta-register-btn"
-              className="btn bg-white text-primary font-black px-8 py-4 rounded-2xl shadow-2xl hover:scale-105 transition-transform flex items-center gap-2 text-base"
-            >
-              <Building2 size={20} />
-              Register Your Hospital — Free
-            </Link>
-            <div className="flex items-center gap-2 text-blue-100 text-sm font-semibold">
-              <CheckCircle size={16} className="text-blue-200" />
-              No credit card required
-            </div>
+          <div className="flex items-center gap-2 text-blue-100 text-sm font-semibold">
+            <CheckCircle size={16} className="text-blue-200" />
+            No credit card required
           </div>
 
           {/* quick info pills */}

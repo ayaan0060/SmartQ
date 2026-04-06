@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-// eslint-disable-next-line no-unused-vars
 import { motion, useReducedMotion } from 'framer-motion';
 import { Users, CheckCircle2, XCircle, RefreshCcw, Play, Terminal, Building2, MapPin } from 'lucide-react';
 import { staggerContainer, fadeUp } from '../utils/motion';

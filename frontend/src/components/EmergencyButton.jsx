@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { AlertTriangle, X, Loader2 } from 'lucide-react';
 import SOSModal from './home/SOSModal';
 
-export default function EmergencyButton({ hospitalId }) {
+export default function EmergencyButton() {
   const [sosOpen, setSosOpen] = useState(false);
 
   return (

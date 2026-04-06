@@ -6,6 +6,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const rateLimit = require('express-rate-limit');
 const { errorHandler } = require('./middleware/errorMiddleware');
+const { auditMiddleware, logRateLimit } = require('./utils/logger');
 
 dotenv.config();
 
@@ -77,7 +78,6 @@ app.locals.io = io;
 // ── Middleware ───────────────────────────────────────────────
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -86,6 +86,22 @@ app.use(cors({
   },
   credentials: true,
 }));
+
+// Security headers — set manually without helmet to avoid new dependency
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
+
+// Audit middleware — logs slow responses and 4xx/5xx
+app.use(auditMiddleware);
 app.use(express.json({ 
   limit: '10mb',
   verify: (req, res, buf) => {
@@ -98,14 +114,24 @@ app.use(express.urlencoded({ extended: true }));
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
   max: parseInt(process.env.RATE_LIMIT_MAX) || 200,
-  message: { success: false, message: 'Too many requests, please try again later.' }
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logRateLimit(req);
+    res.status(429).json({ success: false, message: 'Too many requests, please try again later.' });
+  },
 });
 app.use('/api/', limiter);
 
 const authLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
   max: parseInt(process.env.AUTH_RATE_LIMIT_MAX) || (process.env.NODE_ENV === 'production' ? 20 : 100),
-  message: { success: false, message: 'Too many login attempts. Please try again in 15 minutes.' }
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logRateLimit(req);
+    res.status(429).json({ success: false, message: 'Too many login attempts. Please try again in 15 minutes.' });
+  },
 });
 
 // ── Routes ───────────────────────────────────────────────────

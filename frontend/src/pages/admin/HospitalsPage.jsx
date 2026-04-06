@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Pencil, Trash2, Building2, CheckCircle2, ExternalLink, Users, Stethoscope, Activity, ThumbsUp, ThumbsDown, Clock } from 'lucide-react';
 import Modal from '../../components/ui/Modal';
@@ -43,16 +43,18 @@ export default function HospitalsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [modal, setModal] = useState({ open: false, mode: 'create', data: EMPTY });
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     api.get('/hospitals')
       .then(r => setHospitals(r.data.data.hospitals || []))
       .catch(() => toast.error('Failed to load hospitals'))
       .finally(() => setLoading(false));
-  };
+  }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const t = setTimeout(() => load(), 0);
+    return () => clearTimeout(t);
+  }, [load]);
 
   const handleApprove = async (e, id) => {
     e.stopPropagation();
@@ -205,7 +207,6 @@ export default function HospitalsPage() {
                     { icon: Stethoscope, label: 'Doctors',  value: h.doctorCount ?? 0,      color: '#10B981' },
                     { icon: Users,       label: 'Patients', value: h.patientCount ?? 0,      color: '#8B5CF6' },
                     { icon: Activity,    label: 'Active Q', value: h.activeQueueCount ?? 0,  color: '#F59E0B' },
-                  // eslint-disable-next-line no-unused-vars
                   ].map(({ icon: Icon, label, value, color }) => (
                     <div key={label} className="rounded-lg p-2 text-center" style={{ background: '#0F1623', border: '1px solid #1F2937' }}>
                       <Icon size={12} className="mx-auto mb-1" style={{ color }} />

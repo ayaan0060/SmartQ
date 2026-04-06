@@ -35,7 +35,7 @@ export default function AdminDashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { fetchStats(); }, []);
+  useEffect(() => { fetchStats(); }, [fetchStats]);
 
   useEffect(() => {
     const hospitalId = user?.hospitalId;
@@ -47,7 +47,7 @@ export default function AdminDashboardPage() {
       const s = getSocket();
       if (s) ['queue:update', 'queue:add', 'queue:remove'].forEach(e => s.off(e, refresh));
     };
-  }, [user?.hospitalId]);
+  }, [user?.hospitalId, fetchStats]);
 
   useEffect(() => {
     if (!isSuperAdmin()) return;

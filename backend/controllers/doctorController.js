@@ -27,7 +27,13 @@ const create = asyncHandler(async (req, res) => {
 // PATCH /api/doctors/:id
 const update = asyncHandler(async (req, res) => {
   const filter = { _id: req.params.id, ...(req.hospitalFilter || {}) };
-  const doctor = await Doctor.findOneAndUpdate(filter, req.body, { new: true, runValidators: true });
+  // Whitelist updatable fields — prevent overwriting hospitalId or userId
+  const { name, email, phone, specialization, consultationFee, schedule, avatar } = req.body;
+  const doctor = await Doctor.findOneAndUpdate(
+    filter,
+    { name, email, phone, specialization, consultationFee, schedule, avatar },
+    { new: true, runValidators: true }
+  );
   if (!doctor) return error(res, 'Doctor not found', 404);
   return success(res, { doctor }, 200, 'Doctor updated');
 });

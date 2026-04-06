@@ -43,7 +43,13 @@ const create = asyncHandler(async (req, res) => {
 // PATCH /api/patients/:id
 const update = asyncHandler(async (req, res) => {
   const filter = { _id: req.params.id, ...(req.hospitalFilter || {}) };
-  const patient = await Patient.findOneAndUpdate(filter, req.body, { new: true, runValidators: true });
+  // Whitelist updatable fields — prevent overwriting hospitalId
+  const { name, email, phone, gender, dateOfBirth, bloodGroup, address, notes } = req.body;
+  const patient = await Patient.findOneAndUpdate(
+    filter,
+    { name, email, phone, gender, dateOfBirth, bloodGroup, address, notes },
+    { new: true, runValidators: true }
+  );
   if (!patient) return error(res, 'Patient not found', 404);
   return success(res, { patient }, 200, 'Patient updated');
 });

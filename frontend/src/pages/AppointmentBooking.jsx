@@ -113,8 +113,15 @@ export default function AppointmentBooking() {
 
   // ─── Submit ───
   const handleBook = async () => {
+    console.log('--- DEBUG BOOKING SUBMISSION ---');
+    console.log('Hospital:', selectedHospital);
+    console.log('Service:', selectedService);
+    console.log('Doctor:', selectedDoctor);
+    console.log('Date:', selectedDate);
+    console.log('Slot:', selectedSlot);
+    
     if (!selectedHospital || !selectedService || !selectedDoctor || !selectedDate || !selectedSlot) {
-      toast.error('Please complete all selections');
+      toast.error('Please complete all selections (check console for missing fields)');
       return;
     }
     setBooking(true);

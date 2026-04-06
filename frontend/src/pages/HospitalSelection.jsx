@@ -6,6 +6,7 @@ import { Search, Building2, MapPin, Star, Navigation, AlertCircle, Bookmark, Sli
 
 import api from '../lib/api';
 import { useHospitalStore } from '../features/hospital/useHospitalStore';
+import { useAuthStore } from '../features/auth/useAuthStore';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { haversineDistanceKm } from '../services/osrmService';
 import Skeleton from '../components/Skeleton';
@@ -30,6 +31,7 @@ export default function HospitalSelection() {
   const [modalOpen, setModalOpen] = useState(false);
 
   const setSelectedHospital = useHospitalStore(s => s.setSelectedHospital);
+  const { user } = useAuthStore();
   const navigate = useNavigate();
   const { getPosition, position: userLocation, geoError } = useGeolocation();
 
@@ -71,8 +73,8 @@ export default function HospitalSelection() {
 
   const handleSelect = useCallback((hospital) => {
     setSelectedHospital(hospital);
-    navigate('/dashboard');
-  }, [setSelectedHospital, navigate]);
+    navigate(user?.role === 'patient' ? '/patient/dashboard' : '/dashboard');
+  }, [setSelectedHospital, navigate, user]);
 
   const handleGetDirections = useCallback((hospital) => {
     setDirectionsHospital(hospital);

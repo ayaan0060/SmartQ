@@ -27,7 +27,6 @@ export default function Register() {
   const [regMethod, setRegMethod] = useState('email');
   const [step, setStep]   = useState(0);
   const [form, setForm]   = useState({ name: '', email: '', password: '', confirmPassword: '', role: 'patient', hospitalId: '', phone: '', allergies: '' });
-  const [verifiedPhone, setVerifiedPhone] = useState('');
   const [hospitals, setHospitals] = useState([]);
   const [loading, setLoading]     = useState(false);
   const [errors, setErrors]       = useState({});
@@ -48,14 +47,11 @@ export default function Register() {
     if (regMethod !== 'phone' || step !== 1) return;
     window.phoneEmailListener = async (userObj) => {
       try {
-        const r = await api.post('/auth/verify-phone-email', {
-          user_json_url: userObj.user_json_url,
+        await api.post('/auth/verify-phone', {
+          user_id: userObj.user_id,
           user_country_code: userObj.user_country_code,
           user_phone_number: userObj.user_phone_number,
         });
-        const { phone } = r.data.data;
-        setVerifiedPhone(phone);
-        toast.success(`Phone ${phone} verified!`);
         setStep(2);
       } catch (err) {
         toast.error(err?.response?.data?.message || 'Phone verification failed.');
@@ -77,7 +73,10 @@ export default function Register() {
     const e = {};
     if (!form.name.trim() || form.name.length < 2) e.name = 'Name must be at least 2 characters';
     if (regMethod === 'email' && (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))) e.email = 'Enter a valid email address';
-    if (!form.password || form.password.length < 6) e.password = 'Password must be at least 6 characters';
+    if (!form.password || form.password.length < 8) e.password = 'Password must be at least 8 characters';
+    if (!/[A-Z]/.test(form.password)) e.password = 'Password must contain at least one uppercase letter';
+    if (!/[0-9]/.test(form.password)) e.password = 'Password must contain at least one number';
+    if (!/[^A-Za-z0-9]/.test(form.password)) e.password = 'Password must contain at least one special character';
     if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match';
     if (needsHospital && !form.hospitalId) e.hospitalId = 'Please select your hospital';
     return e;
@@ -156,7 +155,7 @@ export default function Register() {
             <div className="flex rounded-xl p-1 mb-8 bg-surface-container-high">
               {[{ id: 'email', icon: Mail, label: 'Email' }, { id: 'phone', icon: Phone, label: 'Phone OTP' }].map(({ id, icon: Icon, label }) => (
                 <button key={id} type="button"
-                  onClick={() => { setRegMethod(id); setStep(0); setErrors({}); setVerifiedPhone(''); }}
+                  onClick={() => { setRegMethod(id); setStep(0); setErrors({}); }}
                   className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-all"
                   style={{ background: regMethod === id ? '#ffffff' : 'transparent', color: regMethod === id ? '#a5001b' : '#5f5e5e', boxShadow: regMethod === id ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
                 >
@@ -208,7 +207,7 @@ export default function Register() {
                     <div className="flex flex-col gap-2">
                       <label className="text-[10px] font-bold text-secondary uppercase tracking-widest px-1">Password</label>
                       <div className="relative">
-                        <input type={showPass ? 'text' : 'password'} placeholder="Min. 6 characters" value={form.password} onChange={e => set('password', e.target.value)} className={inputCls(errors.password)} />
+                        <input type={showPass ? 'text' : 'password'} placeholder="Min. 8 chars, 1 uppercase, 1 number, 1 special" value={form.password} onChange={e => set('password', e.target.value)} className={inputCls(errors.password)} />
                         <button type="button" tabIndex={-1} onClick={() => setShowPass(s => !s)} className="absolute right-4 top-1/2 -translate-y-1/2 text-secondary">
                           {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>

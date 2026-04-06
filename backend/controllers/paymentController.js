@@ -3,6 +3,7 @@ const Token = require('../models/Token');
 const Service = require('../models/Service');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { success, error } = require('../utils/apiResponse');
+const { logIDOR } = require('../utils/logger');
 
 // Generate a daily queue number for a given service
 const generateQueueNumber = async (hospitalId, serviceId) => {
@@ -63,9 +64,15 @@ exports.confirmPayment = asyncHandler(async (req, res) => {
 
   const payment = await Payment.findById(paymentId);
   if (!payment) return error(res, 'Payment not found', 404);
-  if (payment.status === 'paid') return success(res, { message: 'Already paid' }); // Idempotency
 
-  // Dummy: mark paid immediately
+  // Ownership check — only the user who created the payment can confirm it
+  if (payment.userId.toString() !== req.user._id.toString()) {
+    logIDOR(req, 'Payment', paymentId);
+    return error(res, 'Access denied', 403);
+  }
+
+  if (payment.status === 'paid') return success(res, { message: 'Already paid' });
+
   payment.status = 'paid';
   await payment.save();
 
@@ -99,6 +106,13 @@ exports.processCardPayment = asyncHandler(async (req, res) => {
 
   const payment = await Payment.findById(paymentId);
   if (!payment) return error(res, 'Payment session not found', 404);
+
+  // Ownership check
+  if (payment.userId.toString() !== req.user._id.toString()) {
+    logIDOR(req, 'Payment', paymentId);
+    return error(res, 'Access denied', 403);
+  }
+
   if (payment.status === 'paid') return success(res, { message: 'Already paid' });
 
   // Mark payment as paid

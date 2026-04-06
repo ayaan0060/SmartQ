@@ -1,5 +1,8 @@
 node_modules
 .env
+*.env.local
 *.log
 npm-debug.log*
 .DS_Store
+# Keep .env.example tracked (no secrets in it)
+!.env.example

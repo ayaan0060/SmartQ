@@ -10,7 +10,7 @@
  *   onClose  — () => void
  */
 
-import React, { useEffect, useCallback, memo } from 'react';
+import React, { useEffect, memo } from 'react';
 import { X, Calendar, Clock, Activity, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useVisitHistory } from '../../hooks/useVisitHistory';

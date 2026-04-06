@@ -31,8 +31,10 @@ const getSlots = asyncHandler(async (req, res) => {
   const doctor = await Doctor.findById(doctorId).lean();
   if (!doctor) return error(res, 'Doctor not found', 404);
 
-  const dayName = DAYS[new Date(date).getDay()];
-  const schedule = doctor.schedule?.[dayName];
+  const [year, month, day] = date.split('-').map(Number);
+  const localDate = new Date(year, month - 1, day);
+  const dayName = DAYS[localDate.getDay()];
+  const schedule = doctor?.schedule?.[dayName] || doctor.schedule?.[dayName];
 
   if (!schedule?.available || !schedule?.start || !schedule?.end) {
     return success(res, { slots: [], message: 'Doctor is not available on this day' });
@@ -71,7 +73,9 @@ const bookAppointment = asyncHandler(async (req, res) => {
 
   // Check doctor is available that day
   const doctor = await Doctor.findById(doctorId).lean();
-  const dayName = DAYS[new Date(date).getDay()];
+  const [year, month, day] = date.split('-').map(Number);
+  const localDate = new Date(year, month - 1, day);
+  const dayName = DAYS[localDate.getDay()];
   const schedule = doctor?.schedule?.[dayName];
   if (!schedule?.available) return error(res, 'Doctor is not available on this day', 400);
 
@@ -81,7 +85,7 @@ const bookAppointment = asyncHandler(async (req, res) => {
   });
 
   // Auto-create a token for the appointment date
-  const today = new Date(date);
+  const today = new Date(year, month - 1, day);
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);

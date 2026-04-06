@@ -62,6 +62,26 @@ const AppointmentBooking = lazyWithRetry(() => import('./pages/AppointmentBookin
 const MyAppointments     = lazyWithRetry(() => import('./pages/MyAppointments'));
 const PatientQueue       = lazyWithRetry(() => import('./pages/PatientQueue'));
 
+// ── Role-Specific Layouts ───────────────────
+const DoctorLayout = lazyWithRetry(() => import('./layouts/DoctorLayout'));
+const StaffLayout  = lazyWithRetry(() => import('./layouts/StaffLayout'));
+
+// ── Receptionist Pages ──────────────────────
+const ReceptionistDashboard = lazyWithRetry(() => import('./pages/receptionist/Dashboard'));
+
+// ── Doctor Pages ────────────────────────────
+const DoctorDashboard    = lazyWithRetry(() => import('./pages/doctor/Dashboard'));
+const DoctorQueue        = lazyWithRetry(() => import('./pages/doctor/Queue'));
+const DoctorAppointments = lazyWithRetry(() => import('./pages/doctor/Appointments'));
+const PatientRecords     = lazyWithRetry(() => import('./pages/doctor/Records'));
+const DoctorSchedule     = lazyWithRetry(() => import('./pages/doctor/Schedule'));
+
+// ── Nurse Pages ─────────────────────────────
+const NurseDashboard     = lazyWithRetry(() => import('./pages/nurse/Dashboard'));
+const NursePatients      = lazyWithRetry(() => import('./pages/nurse/Patients'));
+const NurseVitals        = lazyWithRetry(() => import('./pages/nurse/Vitals'));
+const NurseAnnouncements = lazyWithRetry(() => import('./pages/nurse/Announcements'));
+
 const LoadingFallback = () => (
   <div className="flex min-h-screen items-center justify-center bg-background">
     <div className="flex flex-col items-center gap-4">
@@ -90,12 +110,40 @@ function AppContent() {
         <Route path="/payments" element={<ProtectedRoute><PaymentHistory /></ProtectedRoute>} />
         <Route path="/emergency/:requestId" element={<ProtectedRoute><EmergencyTracking /></ProtectedRoute>} />
         <Route path="/ambulance" element={<ProtectedRoute><AmbulancePage /></ProtectedRoute>} />
-        <Route path="/reception" element={<ProtectedRoute><ReceptionistPage /></ProtectedRoute>} />
         <Route path="/display/:hospitalId" element={<DisplayBoard />} />
-        <Route path="/doctor" element={<ProtectedRoute><DoctorPortal /></ProtectedRoute>} />
         <Route path="/book-appointment" element={<ProtectedRoute><AppointmentBooking /></ProtectedRoute>} />
-        <Route path="/appointments" element={<ProtectedRoute><MyAppointments /></ProtectedRoute>} />
+
+        {/* ── Doctor Workspace ────────────────── */}
+        <Route path="/doctor" element={<ProtectedRoute><DoctorLayout /></ProtectedRoute>}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard"    element={<DoctorDashboard />} />
+          <Route path="queue"        element={<DoctorQueue />} />
+          <Route path="appointments" element={<DoctorAppointments />} />
+          <Route path="records"      element={<PatientRecords />} />
+          <Route path="schedule"     element={<DoctorSchedule />} />
+        </Route>
+
+        {/* ── Staff Workspace (Nurse/Receptionist) ── */}
+        <Route path="/staff" element={<ProtectedRoute><StaffLayout /></ProtectedRoute>}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={
+            <ProtectedRoute allowedRoles={['receptionist', 'staff', 'nurse']}>
+               {/* StaffLayout handles internal switching, but we can also use index logic if needed */}
+               <ReceptionistDashboard /> 
+            </ProtectedRoute>
+          } />
+          {/* We'll refine these sub-routes in the layout or here */}
+          <Route path="patients" element={<NursePatients />} />
+          <Route path="vitals" element={<NurseVitals />} />
+          <Route path="announcements" element={<NurseAnnouncements />} />
+        </Route>
+
         <Route path="/queue" element={<ProtectedRoute requireHospital><PatientQueue /></ProtectedRoute>} />
+
+        {/* ── Patient-prefixed Routes ────────────── */}
+        <Route path="/patient/dashboard" element={<ProtectedRoute requireHospital><Dashboard /></ProtectedRoute>} />
+        <Route path="/patient/history" element={<ProtectedRoute><TokenHistory /></ProtectedRoute>} />
+        <Route path="/patient/queue" element={<ProtectedRoute requireHospital><PatientQueue /></ProtectedRoute>} />
 
         {/* ── Admin Panel Routes ─────────────── */}
         <Route

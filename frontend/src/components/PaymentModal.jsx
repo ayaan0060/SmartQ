@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { CreditCard, Lock, X, CheckCircle, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
