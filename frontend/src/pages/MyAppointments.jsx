@@ -1,171 +1,232 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Calendar, Clock, User, Plus, X, ArrowLeft, Stethoscope } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import {
+  Calendar, Clock, CheckCircle2, XCircle, AlertCircle,
+  CalendarPlus, ChevronRight, Stethoscope, Building2, X,
+} from 'lucide-react';
+
 import api from '../lib/api';
 import PageLayout from '../layouts/PageLayout';
+import Skeleton from '../components/Skeleton';
 
-const statusConfig = {
-  booked:     { label: 'Booked',     color: '#3B82F6', bg: 'rgba(59,130,246,0.12)' },
-  confirmed:  { label: 'Confirmed',  color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
-  completed:  { label: 'Completed',  color: '#6B7280', bg: 'rgba(107,114,128,0.12)' },
-  cancelled:  { label: 'Cancelled',  color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
+// ── Tab config ────────────────────────────────────────────────────────────────
+const TABS = [
+  { id: 'upcoming', label: 'Upcoming', statuses: ['booked', 'confirmed'] },
+  { id: 'past',     label: 'Past',     statuses: ['completed'] },
+  { id: 'cancelled',label: 'Cancelled',statuses: ['cancelled'] },
+];
+
+// ── Status badge ──────────────────────────────────────────────────────────────
+const StatusBadge = ({ status }) => {
+  const cfg = {
+    booked:    { cls: 'bg-blue-100 text-blue-700',   icon: <Clock size={11} />,       label: 'Booked' },
+    confirmed: { cls: 'bg-green-100 text-green-700',  icon: <CheckCircle2 size={11} />, label: 'Confirmed' },
+    completed: { cls: 'bg-gray-100 text-gray-600',   icon: <CheckCircle2 size={11} />, label: 'Completed' },
+    cancelled: { cls: 'bg-red-100 text-red-600',     icon: <XCircle size={11} />,      label: 'Cancelled' },
+  };
+  const c = cfg[status] || cfg.booked;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${c.cls}`}>
+      {c.icon}{c.label}
+    </span>
+  );
 };
 
-export default function MyAppointments() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [cancelling, setCancelling] = useState(null);
+// ── Appointment card ──────────────────────────────────────────────────────────
+function AppointmentCard({ appt, onCancel }) {
+  const [confirming, setConfirming] = useState(false);
+  const isCancellable = ['booked', 'confirmed'].includes(appt.status);
+  const docName = appt.doctorId?.name || 'Doctor';
+  const specialty = appt.doctorId?.specialization || '';
+  const hospital  = appt.hospitalId?.name || '';
+  const service   = appt.serviceId?.name || appt.reason || 'Consultation';
 
-  const { data, isLoading } = useQuery({
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.97 }}
+      className="bg-white dark:bg-white/5 border border-(--border) rounded-2xl p-5 flex flex-col gap-4"
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-(--smartq-red)/10 flex items-center justify-center shrink-0">
+            <Stethoscope size={18} className="text-(--smartq-red)" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-(--foreground) leading-tight">{docName}</h4>
+            {specialty && <p className="text-xs text-(--muted) mt-0.5">{specialty}</p>}
+          </div>
+        </div>
+        <StatusBadge status={appt.status} />
+      </div>
+
+      {/* Details */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex items-center gap-2">
+          <Calendar size={13} className="text-(--muted)" />
+          <span className="text-xs text-(--foreground) font-medium">{appt.date}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Clock size={13} className="text-(--muted)" />
+          <span className="text-xs text-(--foreground) font-medium">{appt.slot}</span>
+        </div>
+        {hospital && (
+          <div className="flex items-center gap-2 col-span-2">
+            <Building2 size={13} className="text-(--muted)" />
+            <span className="text-xs text-(--muted)">{hospital}</span>
+          </div>
+        )}
+        <div className="col-span-2">
+          <span className="text-xs bg-gray-100 dark:bg-white/10 text-(--muted) px-2 py-0.5 rounded-full">{service}</span>
+        </div>
+      </div>
+
+      {/* Cancel */}
+      {isCancellable && (
+        <div className="pt-1 border-t border-(--border)">
+          {confirming ? (
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-(--muted) flex-1">Cancel this appointment?</p>
+              <button
+                onClick={() => { onCancel(appt._id); setConfirming(false); }}
+                className="text-xs font-bold text-red-500 hover:text-red-700 transition-colors"
+              >
+                Yes, cancel
+              </button>
+              <button
+                onClick={() => setConfirming(false)}
+                className="text-xs font-bold text-(--muted) hover:text-(--foreground) transition-colors"
+              >
+                Keep
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirming(true)}
+              className="flex items-center gap-1 text-xs text-(--muted) hover:text-red-500 transition-colors font-medium"
+            >
+              <X size={12} /> Cancel Appointment
+            </button>
+          )}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+export default function MyAppointments() {
+  const [activeTab, setActiveTab] = useState('upcoming');
+  const qc = useQueryClient();
+
+  const { data: allAppointments = [], isLoading } = useQuery({
     queryKey: ['my-appointments'],
     queryFn: () => api.get('/appointments/my').then(r => r.data.data.appointments),
   });
 
   const cancelMutation = useMutation({
-    mutationFn: (id) => api.delete(`/appointments/${id}`),
+    mutationFn: (id) => api.patch(`/appointments/${id}/cancel`),
     onSuccess: () => {
-      toast.success('Appointment cancelled');
-      queryClient.invalidateQueries(['my-appointments']);
-      setCancelling(null);
+      toast.success('Appointment cancelled.');
+      qc.invalidateQueries({ queryKey: ['my-appointments'] });
+      qc.invalidateQueries({ queryKey: ['patient-upcoming-appointments'] });
     },
-    onError: (err) => {
-      toast.error(err?.response?.data?.message || 'Failed to cancel');
-      setCancelling(null);
-    },
+    onError: (err) => toast.error(err?.response?.data?.message || 'Failed to cancel.'),
   });
 
-  const upcoming = data?.filter(a => a.status !== 'completed' && a.status !== 'cancelled') || [];
-  const past     = data?.filter(a => a.status === 'completed' || a.status === 'cancelled') || [];
+  const currentTab = TABS.find(t => t.id === activeTab);
+  const filtered = allAppointments.filter(a => currentTab.statuses.includes(a.status));
+
+  // Tab counts
+  const counts = TABS.reduce((acc, t) => {
+    acc[t.id] = allAppointments.filter(a => t.statuses.includes(a.status)).length;
+    return acc;
+  }, {});
 
   return (
-    <PageLayout>
-      <div className="max-w-2xl mx-auto py-8 px-4">
-
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/dashboard')} className="rounded-xl p-2"
-              style={{ background: '#1E293B', color: '#94A3B8' }}>
-              <ArrowLeft size={18} />
-            </button>
-            <div>
-              <h1 className="text-xl font-bold text-white">My Appointments</h1>
-              <p className="text-xs" style={{ color: '#6B7280' }}>{upcoming.length} upcoming</p>
-            </div>
-          </div>
-          <button onClick={() => navigate('/book-appointment')}
-            className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white"
-            style={{ background: 'linear-gradient(135deg,#1D4ED8,#2563EB)' }}>
-            <Plus size={15} /> Book New
-          </button>
+    <PageLayout title="My Appointments" subtitle="Manage all your scheduled visits">
+      <div className="max-w-3xl mx-auto space-y-6">
+        {/* CTA */}
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-(--muted)">{allAppointments.length} total appointments</p>
+          <Link
+            to="/book-appointment"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-(--smartq-red) text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
+          >
+            <CalendarPlus size={15} /> Book New
+          </Link>
         </div>
 
-        {isLoading ? (
-          <div className="flex justify-center py-16">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" style={{ borderColor: '#3B82F6', borderTopColor: 'transparent' }} />
-          </div>
-        ) : data?.length === 0 ? (
-          <div className="text-center py-16 space-y-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl mx-auto" style={{ background: '#1E293B' }}>
-              <Calendar size={28} style={{ color: '#374151' }} />
-            </div>
-            <p className="font-semibold text-white">No appointments yet</p>
-            <p className="text-sm" style={{ color: '#6B7280' }}>Book your first appointment with a doctor</p>
-            <button onClick={() => navigate('/book-appointment')}
-              className="flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold text-white mx-auto"
-              style={{ background: 'linear-gradient(135deg,#1D4ED8,#2563EB)' }}>
-              <Plus size={15} /> Book Appointment
+        {/* Tabs */}
+        <div className="flex gap-1 bg-gray-100 dark:bg-white/5 rounded-xl p-1">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === tab.id
+                  ? 'bg-white dark:bg-white/10 text-(--foreground) shadow-sm'
+                  : 'text-(--muted) hover:text-(--foreground)'
+              }`}
+            >
+              {tab.label}
+              {counts[tab.id] > 0 && (
+                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                  activeTab === tab.id ? 'bg-(--smartq-red) text-white' : 'bg-gray-200 dark:bg-white/10 text-(--muted)'
+                }`}>
+                  {counts[tab.id]}
+                </span>
+              )}
             </button>
+          ))}
+        </div>
+
+        {/* Content */}
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-36 rounded-2xl" />)}
           </div>
         ) : (
-          <div className="space-y-6">
-            {upcoming.length > 0 && (
-              <div className="space-y-3">
-                <p className="text-xs font-bold uppercase tracking-wide" style={{ color: '#6B7280' }}>Upcoming</p>
-                {upcoming.map(appt => (
-                  <AppointmentCard key={appt._id} appt={appt}
-                    onCancel={() => setCancelling(appt._id)}
-                    cancelling={cancelling === appt._id} />
-                ))}
-              </div>
-            )}
-            {past.length > 0 && (
-              <div className="space-y-3">
-                <p className="text-xs font-bold uppercase tracking-wide" style={{ color: '#6B7280' }}>Past</p>
-                {past.map(appt => (
-                  <AppointmentCard key={appt._id} appt={appt} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Cancel confirmation */}
-        {cancelling && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)' }}>
-            <div className="w-full max-w-sm rounded-2xl p-6 space-y-4" style={{ background: '#0D1117', border: '1px solid #1E293B' }}>
-              <h3 className="text-base font-bold text-white">Cancel Appointment?</h3>
-              <p className="text-sm" style={{ color: '#6B7280' }}>This action cannot be undone.</p>
-              <div className="flex gap-3">
-                <button onClick={() => setCancelling(null)}
-                  className="flex-1 rounded-xl py-2.5 text-sm font-semibold"
-                  style={{ background: '#1E293B', color: '#94A3B8' }}>Keep</button>
-                <button onClick={() => cancelMutation.mutate(cancelling)}
-                  className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white"
-                  style={{ background: '#EF4444' }}>Cancel Appointment</button>
-              </div>
-            </div>
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="space-y-4"
+            >
+              {filtered.length === 0 ? (
+                <div className="py-20 text-center">
+                  <Calendar size={40} className="mx-auto mb-4 text-(--muted) opacity-30" />
+                  <p className="text-base font-semibold text-(--muted)">No {activeTab} appointments</p>
+                  {activeTab === 'upcoming' && (
+                    <Link
+                      to="/book-appointment"
+                      className="inline-flex items-center gap-1 mt-4 text-sm font-bold text-(--smartq-red) hover:opacity-80 transition-opacity"
+                    >
+                      Book one now <ChevronRight size={14} />
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                filtered.map(appt => (
+                  <AppointmentCard
+                    key={appt._id}
+                    appt={appt}
+                    onCancel={cancelMutation.mutate}
+                  />
+                ))
+              )}
+            </motion.div>
+          </AnimatePresence>
         )}
       </div>
     </PageLayout>
-  );
-}
-
-function AppointmentCard({ appt, onCancel, cancelling }) {
-  const cfg = statusConfig[appt.status] || statusConfig.booked;
-  const canCancel = ['booked', 'confirmed'].includes(appt.status);
-
-  return (
-    <div className="rounded-2xl p-4" style={{ background: '#0D1117', border: '1px solid #1E293B' }}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-base font-black text-white"
-            style={{ background: 'linear-gradient(135deg,#2563EB,#7C3AED)' }}>
-            {appt.doctorId?.name?.charAt(0) || 'D'}
-          </div>
-          <div>
-            <p className="font-semibold text-white text-sm">{appt.doctorId?.name}</p>
-            <p className="text-xs" style={{ color: '#6B7280' }}>{appt.doctorId?.specialization}</p>
-          </div>
-        </div>
-        <span className="rounded-full px-2.5 py-1 text-xs font-bold shrink-0"
-          style={{ background: cfg.bg, color: cfg.color }}>
-          {cfg.label}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 mt-3">
-        {[
-          { icon: Calendar,    value: new Date(appt.date).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' }) },
-          { icon: Clock,       value: appt.slot },
-          { icon: Stethoscope, value: appt.serviceId?.name },
-          { icon: User,        value: appt.hospitalId?.name },
-        ].map(({ icon: Icon, value }, i) => (
-          <div key={i} className="flex items-center gap-1.5 text-xs" style={{ color: '#94A3B8' }}>
-            <Icon size={11} style={{ color: '#475569', flexShrink: 0 }} />{value}
-          </div>
-        ))}
-      </div>
-
-      {canCancel && (
-        <button onClick={onCancel} disabled={cancelling}
-          className="mt-3 flex items-center gap-1.5 text-xs font-semibold transition-all"
-          style={{ color: '#EF4444' }}>
-          <X size={12} /> Cancel Appointment
-        </button>
-      )}
-    </div>
   );
 }

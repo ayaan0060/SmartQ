@@ -116,6 +116,23 @@ const bookAppointment = asyncHandler(async (req, res) => {
   return success(res, { appointment: populated, token }, 201, 'Appointment booked successfully');
 });
 
+// GET /api/appointments/patient/upcoming — upcoming non-cancelled appointments
+const getPatientUpcoming = asyncHandler(async (req, res) => {
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const appointments = await Appointment.find({
+    userId: req.user._id,
+    status: { $in: ['booked', 'confirmed'] },
+    date: { $gte: today },
+  })
+    .populate('doctorId',   'name specialization')
+    .populate('serviceId',  'name')
+    .populate('hospitalId', 'name')
+    .sort({ date: 1, slot: 1 })
+    .limit(5)
+    .lean();
+  return success(res, { appointments });
+});
+
 // GET /api/appointments/my — patient's own appointments
 const getMyAppointments = asyncHandler(async (req, res) => {
   const appointments = await Appointment.find({ userId: req.user._id })
@@ -127,7 +144,7 @@ const getMyAppointments = asyncHandler(async (req, res) => {
   return success(res, { appointments });
 });
 
-// DELETE /api/appointments/:id — cancel
+// DELETE / PATCH /api/appointments/:id/cancel — cancel
 const cancelAppointment = asyncHandler(async (req, res) => {
   const appt = await Appointment.findOne({ _id: req.params.id, userId: req.user._id });
   if (!appt) return error(res, 'Appointment not found', 404);
@@ -144,4 +161,5 @@ const cancelAppointment = asyncHandler(async (req, res) => {
   return success(res, { appointment: appt }, 200, 'Appointment cancelled');
 });
 
-module.exports = { getSlots, bookAppointment, getMyAppointments, cancelAppointment };
+module.exports = { getSlots, bookAppointment, getMyAppointments, cancelAppointment, getPatientUpcoming };
+

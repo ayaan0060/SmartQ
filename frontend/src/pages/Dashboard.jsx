@@ -4,8 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
-  MapPin, Clock, Star, Building2, CalendarPlus, ArrowRight,
+  MapPin, Clock, Building2, CalendarPlus, ArrowRight,
   Heart, CheckCircle2, AlertCircle, Navigation, TrendingUp,
+  Calendar,
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 
@@ -19,26 +20,6 @@ import Skeleton from '../components/Skeleton';
 import PaymentModal from '../components/PaymentModal';
 import EmergencyButton from '../components/EmergencyButton';
 
-// TODO: Replace with real API data
-const MOCK_QUEUE_DATA = {
-  position: 4,
-  totalWaiting: 18,
-  estimatedWait: 22,
-  consulting: 2,
-};
-
-// TODO: Replace with real appointment data
-const MOCK_APPOINTMENTS = [
-  { id: 1, time: '15:00', priority: 'High Priority', room: 'Room 402', patient: 'Patient #SC-8821', type: 'Post-Operative Cardiac Review', accent: 'bg-primary' },
-  { id: 2, time: '15:45', priority: 'Standard', room: 'Room 110', patient: 'Patient #SC-9004', type: 'New Referral Evaluation', accent: '' },
-];
-
-// TODO: Replace with real transit data
-const MOCK_TRANSIT = [
-  { badge: 'A', badgeColor: 'bg-red-100 text-red-600', line: '8th Ave Express', direction: 'Southbound', status: 'On Time', statusColor: 'text-green-600', ok: true },
-  { badge: 'M14', badgeColor: 'bg-zinc-200 text-zinc-600', line: 'Crosstown Bus', direction: 'Eastbound', status: 'Delayed 12m', statusColor: 'text-primary', ok: false },
-];
-
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -51,6 +32,7 @@ export default function Dashboard() {
     if (user && ['super-admin', 'hospital-admin', 'staff'].includes(user.role)) navigate('/admin');
   }, [user, navigate]);
 
+  // Fetch live queue stats
   useEffect(() => {
     if (!selectedHospital?._id) return;
     api.get(`/queue/stats/${selectedHospital._id}`)
@@ -60,6 +42,22 @@ export default function Dashboard() {
       }).catch(() => {});
   }, [selectedHospital?._id]);
 
+  // Fetch patient's active queue token
+  const { data: activeToken } = useQuery({
+    queryKey: ['my-queue-status'],
+    queryFn: () => api.get('/queue/my-status').then(r => r.data.data),
+    enabled: !!user?._id,
+    refetchInterval: 30000,
+  });
+
+  // Fetch upcoming appointments
+  const { data: upcomingAppointments = [] } = useQuery({
+    queryKey: ['patient-upcoming-appointments'],
+    queryFn: () => api.get('/appointments/patient/upcoming').then(r => r.data.data.appointments),
+    enabled: !!user?._id,
+  });
+
+  // Fetch hospital services
   const { data: services = [], isLoading } = useQuery({
     queryKey: ['services', selectedHospital?._id],
     queryFn: async () => {
@@ -89,6 +87,9 @@ export default function Dashboard() {
   const hospitalCoords = selectedHospital?.coordinates
     ? [selectedHospital.coordinates.lat, selectedHospital.coordinates.lng]
     : [40.7128, -74.006];
+
+  const hasActiveToken = activeToken?.tokenNumber != null;
+  const hasAppointments = upcomingAppointments.length > 0;
 
   return (
     <PageLayout>
@@ -178,12 +179,22 @@ export default function Dashboard() {
 
               <div className="space-y-6">
                 {[
-                  { value: MOCK_QUEUE_DATA.position, label: 'Your Position', sub: 'Awaiting clinical clearance', color: 'text-primary' },
-                  { value: queueStats.waiting || MOCK_QUEUE_DATA.totalWaiting, label: 'Standard Triage', sub: `Est. wait ${queueStats.avgWait || MOCK_QUEUE_DATA.estimatedWait} mins`, color: 'text-on-surface' },
+                  {
+                    value: hasActiveToken ? activeToken.tokenNumber : '—',
+                    label: 'Your Token',
+                    sub: hasActiveToken ? `Position: ${activeToken.position ?? 'N/A'}` : 'No active token',
+                    color: hasActiveToken ? 'text-primary' : 'text-secondary',
+                  },
+                  {
+                    value: queueStats.waiting || 0,
+                    label: 'Patients Waiting',
+                    sub: queueStats.avgWait ? `Est. wait ${queueStats.avgWait} mins` : 'Wait time unavailable',
+                    color: 'text-on-surface',
+                  },
                 ].map(({ value, label, sub, color }) => (
                   <div key={label} className="flex items-center gap-4">
                     <div className="w-14 h-14 rounded-2xl bg-surface-container flex items-center justify-center">
-                      <span className={`text-2xl font-black ${color}`}>{String(value).padStart(2, '0')}</span>
+                      <span className={`text-2xl font-black ${color}`}>{typeof value === 'number' ? String(value).padStart(2, '0') : value}</span>
                     </div>
                     <div>
                       <p className="text-sm font-bold text-on-surface">{label}</p>
@@ -216,23 +227,31 @@ export default function Dashboard() {
                 <Link to="/appointments" className="text-xs font-bold text-primary hover:text-primary-container transition-colors">View All</Link>
               </div>
               <div className="space-y-4 flex-1">
-                {MOCK_APPOINTMENTS.map(appt => (
-                  <motion.div
-                    key={appt.id}
-                    whileHover={{ y: -2 }}
-                    className="group relative bg-surface p-4 rounded-2xl hover:bg-surface-container transition-colors"
-                  >
-                    {appt.accent && <div className="absolute left-0 top-4 bottom-4 w-1 bg-primary rounded-r-full" />}
-                    <div className="flex justify-between items-start mb-2">
-                      <p className={`text-[10px] font-black uppercase tracking-widest ${appt.accent ? 'text-primary' : 'text-secondary'}`}>
-                        {appt.time} - {appt.priority}
-                      </p>
-                      <span className="text-xs font-bold text-on-surface">{appt.room}</span>
-                    </div>
-                    <h5 className="font-bold text-on-surface">{appt.patient}</h5>
-                    <p className="text-xs text-secondary mt-1">{appt.type}</p>
-                  </motion.div>
-                ))}
+                {hasAppointments ? (
+                  upcomingAppointments.map(appt => (
+                    <motion.div
+                      key={appt._id}
+                      whileHover={{ y: -2 }}
+                      className="group relative bg-surface p-4 rounded-2xl hover:bg-surface-container transition-colors"
+                    >
+                      <div className="absolute left-0 top-4 bottom-4 w-1 bg-primary rounded-r-full" />
+                      <div className="flex justify-between items-start mb-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                          {appt.date} · {appt.slot}
+                        </p>
+                        <span className="text-xs font-bold text-on-surface px-2 py-0.5 bg-surface-container rounded-full capitalize">{appt.status}</span>
+                      </div>
+                      <h5 className="font-bold text-on-surface">{appt.doctorId?.name || 'Doctor'}</h5>
+                      <p className="text-xs text-secondary mt-0.5">{appt.serviceId?.name || appt.reason || 'Appointment'}</p>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Calendar size={32} className="text-secondary opacity-40 mb-3" />
+                    <p className="text-sm font-semibold text-secondary">No upcoming appointments</p>
+                    <p className="text-xs text-secondary opacity-60 mt-1">Book one to get started</p>
+                  </div>
+                )}
                 <Link to="/book-appointment" className="block text-center text-xs font-bold text-primary hover:text-primary-container transition-colors py-2">
                   + Book New Appointment
                 </Link>
@@ -272,30 +291,16 @@ export default function Dashboard() {
                 </motion.button>
               </div>
 
-              {/* Transit info */}
-              <div className="p-6 space-y-4">
-                {MOCK_TRANSIT.map(t => (
-                  <div key={t.line} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg ${t.badgeColor} flex items-center justify-center font-black text-xs`}>{t.badge}</div>
-                      <div>
-                        <p className="text-xs font-bold text-on-surface">{t.line}</p>
-                        <p className="text-[10px] text-secondary font-medium">{t.direction}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {t.ok ? <CheckCircle2 size={14} className="text-green-600" /> : <AlertCircle size={14} className="text-amber-500" />}
-                      <span className={`text-xs font-bold ${t.statusColor}`}>{t.status}</span>
-                    </div>
-                  </div>
-                ))}
+              {/* Navigate button only — no mock transit data */}
+              <div className="p-6">
+                <p className="text-xs text-secondary">Click Navigate to get directions to this hospital.</p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Queue alert */}
-        {!alertDismissed && (
+        {/* Queue alert  — only show if user has active token */}
+        {!alertDismissed && hasActiveToken && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -304,7 +309,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-3">
               <AlertCircle size={18} className="text-primary shrink-0" />
               <p className="text-sm font-medium text-on-surface">
-                Your estimated wait time is <strong>{queueStats.avgWait || MOCK_QUEUE_DATA.estimatedWait} minutes</strong>. You'll be notified when it's your turn.
+                Your estimated wait time is <strong>{queueStats.avgWait ?? '—'} minutes</strong>. You'll be notified when it's your turn.
               </p>
             </div>
             <button onClick={() => setAlertDismissed(true)} className="text-secondary hover:text-on-surface text-xs font-bold ml-4 shrink-0">Dismiss</button>

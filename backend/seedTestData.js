@@ -210,7 +210,7 @@ async function seed() {
         email: 'staff@cityhospital.com',
         phone: '+919876543212',
         password: 'Staff@123',
-        role: 'staff',
+        role: 'receptionist',
         hospitalId: hospital._id,
         isActive: true,
       });

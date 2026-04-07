@@ -3,12 +3,14 @@ import { Outlet } from 'react-router-dom';
 import { X } from 'lucide-react';
 import ReceptionistSidebar from './sidebars/ReceptionistSidebar';
 import NurseSidebar from './sidebars/NurseSidebar';
+import StaffSidebar from './sidebars/StaffSidebar';
 import TopBar from '../components/TopBar';
 import { useAuthStore } from '../features/auth/useAuthStore';
 
 const SIDEBAR_MAP = {
   receptionist: ReceptionistSidebar,
   nurse: NurseSidebar,
+  staff: StaffSidebar,
 };
 
 export default function StaffLayout() {

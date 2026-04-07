@@ -25,11 +25,17 @@ export default function Login() {
   useEffect(() => {
     if (authToken) {
       const { user } = useAuthStore.getState();
-      if (user?.role === 'patient') navigate('/patient/dashboard', { replace: true });
-      else if (user?.role === 'doctor') navigate('/doctor/dashboard', { replace: true });
-      else if (['receptionist', 'nurse', 'staff'].includes(user?.role)) navigate('/staff/dashboard', { replace: true });
-      else if (['super-admin', 'hospital-admin', 'admin'].includes(user?.role)) navigate('/admin', { replace: true });
-      else navigate('/select-hospital', { replace: true });
+      const roleRedirect = {
+        'patient':        '/patient/dashboard',
+        'doctor':         '/doctor/dashboard',
+        'receptionist':   '/receptionist/dashboard',
+        'nurse':          '/nurse/dashboard',
+        'staff':          '/staff/dashboard',
+        'hospital-admin': '/admin',
+        'super-admin':    '/admin',
+        'admin':          '/admin',
+      };
+      navigate(roleRedirect[user?.role] || '/select-hospital', { replace: true });
     }
   }, [authToken, navigate]);
 
@@ -44,11 +50,17 @@ export default function Login() {
   };
 
   const redirectUser = (user) => {
-    if (user.role === 'patient') navigate('/patient/dashboard');
-    else if (user.role === 'doctor') navigate('/doctor/dashboard');
-    else if (['receptionist', 'nurse', 'staff'].includes(user.role)) navigate('/staff/dashboard');
-    else if (['super-admin', 'hospital-admin', 'admin'].includes(user.role)) navigate('/admin');
-    else navigate('/select-hospital');
+    const roleRedirect = {
+      'patient':        '/patient/dashboard',
+      'doctor':         '/doctor/dashboard',
+      'receptionist':   '/receptionist/dashboard',
+      'nurse':          '/nurse/dashboard',
+      'staff':          '/staff/dashboard',
+      'hospital-admin': '/admin',
+      'super-admin':    '/admin',
+      'admin':          '/admin',
+    };
+    navigate(roleRedirect[user.role] || '/select-hospital');
   };
 
   const handleLogin = async (e) => {

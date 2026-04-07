@@ -4,7 +4,7 @@ import { useAuthStore } from '../features/auth/useAuthStore';
 import { useHospitalStore } from '../features/hospital/useHospitalStore';
 import { Shield } from 'lucide-react';
 
-const ADMIN_ROLES = ['super-admin', 'hospital-admin', 'staff', 'receptionist', 'doctor', 'admin'];
+const ADMIN_ROLES = ['super-admin', 'hospital-admin', 'receptionist', 'doctor', 'admin'];
 
 const PendingScreen = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -43,7 +43,9 @@ const ProtectedRoute = ({ children, adminOnly = false, requireHospital = false, 
     // If user is logged in but doesn't have the right role, send to their respective dashboard
     if (user.role === 'patient') return <Navigate to="/patient/dashboard" replace />;
     if (user.role === 'doctor') return <Navigate to="/doctor" replace />;
-    if (['receptionist', 'nurse', 'staff'].includes(user.role)) return <Navigate to="/staff" replace />;
+    if (user.role === 'staff') return <Navigate to="/staff/dashboard" replace />;
+    if (user.role === 'nurse') return <Navigate to="/nurse/dashboard" replace />;
+    if (user.role === 'receptionist') return <Navigate to="/receptionist/dashboard" replace />;
     return <Navigate to="/select-hospital" replace />;
   }
 

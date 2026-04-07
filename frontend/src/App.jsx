@@ -67,7 +67,17 @@ const DoctorLayout = lazyWithRetry(() => import('./layouts/DoctorLayout'));
 const StaffLayout  = lazyWithRetry(() => import('./layouts/StaffLayout'));
 
 // ── Receptionist Pages ──────────────────────
-const ReceptionistDashboard = lazyWithRetry(() => import('./pages/receptionist/Dashboard'));
+const ReceptionistDashboard  = lazyWithRetry(() => import('./pages/receptionist/Dashboard'));
+const ReceptionistIssueToken = lazyWithRetry(() => import('./pages/receptionist/IssueToken'));
+const ReceptionistLiveQueue  = lazyWithRetry(() => import('./pages/receptionist/LiveQueue'));
+const ReceptionistAppts      = lazyWithRetry(() => import('./pages/receptionist/Appointments'));
+const ReceptionistLookup     = lazyWithRetry(() => import('./pages/receptionist/PatientLookup'));
+
+// ── Nurse Pages ─────────────────────────────
+const NurseDashboard     = lazyWithRetry(() => import('./pages/nurse/Dashboard'));
+const NursePatients      = lazyWithRetry(() => import('./pages/nurse/Patients'));
+const NurseVitals        = lazyWithRetry(() => import('./pages/nurse/Vitals'));
+const NurseAnnouncements = lazyWithRetry(() => import('./pages/nurse/Announcements'));
 
 // ── Doctor Pages ────────────────────────────
 const DoctorDashboard    = lazyWithRetry(() => import('./pages/doctor/Dashboard'));
@@ -76,11 +86,11 @@ const DoctorAppointments = lazyWithRetry(() => import('./pages/doctor/Appointmen
 const PatientRecords     = lazyWithRetry(() => import('./pages/doctor/Records'));
 const DoctorSchedule     = lazyWithRetry(() => import('./pages/doctor/Schedule'));
 
-// ── Nurse Pages ─────────────────────────────
-const NurseDashboard     = lazyWithRetry(() => import('./pages/nurse/Dashboard'));
-const NursePatients      = lazyWithRetry(() => import('./pages/nurse/Patients'));
-const NurseVitals        = lazyWithRetry(() => import('./pages/nurse/Vitals'));
-const NurseAnnouncements = lazyWithRetry(() => import('./pages/nurse/Announcements'));
+// ── Staff Pages (ward/support staff) ────────
+const StaffDashboard      = lazyWithRetry(() => import('./pages/staff/StaffDashboard'));
+const StaffTasks          = lazyWithRetry(() => import('./pages/staff/StaffTasks'));
+const StaffAnnouncements  = lazyWithRetry(() => import('./pages/staff/StaffAnnouncements'));
+const StaffSchedule       = lazyWithRetry(() => import('./pages/staff/StaffSchedule'));
 
 const LoadingFallback = () => (
   <div className="flex min-h-screen items-center justify-center bg-background">
@@ -123,27 +133,41 @@ function AppContent() {
           <Route path="schedule"     element={<DoctorSchedule />} />
         </Route>
 
-        {/* ── Staff Workspace (Nurse/Receptionist) ── */}
-        <Route path="/staff" element={<ProtectedRoute><StaffLayout /></ProtectedRoute>}>
+        {/* ── Receptionist Workspace ──────────────── */}
+        <Route path="/receptionist" element={<ProtectedRoute allowedRoles={['receptionist']}><StaffLayout /></ProtectedRoute>}>
           <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={
-            <ProtectedRoute allowedRoles={['receptionist', 'staff', 'nurse']}>
-               {/* StaffLayout handles internal switching, but we can also use index logic if needed */}
-               <ReceptionistDashboard /> 
-            </ProtectedRoute>
-          } />
-          {/* We'll refine these sub-routes in the layout or here */}
-          <Route path="patients" element={<NursePatients />} />
-          <Route path="vitals" element={<NurseVitals />} />
+          <Route path="dashboard"    element={<ReceptionistDashboard />} />
+          <Route path="issue-token"  element={<ReceptionistIssueToken />} />
+          <Route path="queue"        element={<ReceptionistLiveQueue />} />
+          <Route path="appointments" element={<ReceptionistAppts />} />
+          <Route path="patients"     element={<ReceptionistLookup />} />
+        </Route>
+
+        {/* ── Nurse Workspace ──────────────────────── */}
+        <Route path="/nurse" element={<ProtectedRoute allowedRoles={['nurse']}><StaffLayout /></ProtectedRoute>}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard"    element={<NurseDashboard />} />
+          <Route path="patients"     element={<NursePatients />} />
+          <Route path="vitals"       element={<NurseVitals />} />
           <Route path="announcements" element={<NurseAnnouncements />} />
+        </Route>
+
+        {/* ── Staff Workspace (ward/support staff only) ── */}
+        <Route path="/staff" element={<ProtectedRoute allowedRoles={['staff']}><StaffLayout /></ProtectedRoute>}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard"    element={<StaffDashboard />} />
+          <Route path="tasks"        element={<StaffTasks />} />
+          <Route path="announcements" element={<StaffAnnouncements />} />
+          <Route path="schedule"     element={<StaffSchedule />} />
         </Route>
 
         <Route path="/queue" element={<ProtectedRoute requireHospital><PatientQueue /></ProtectedRoute>} />
 
         {/* ── Patient-prefixed Routes ────────────── */}
-        <Route path="/patient/dashboard" element={<ProtectedRoute requireHospital><Dashboard /></ProtectedRoute>} />
-        <Route path="/patient/history" element={<ProtectedRoute><TokenHistory /></ProtectedRoute>} />
-        <Route path="/patient/queue" element={<ProtectedRoute requireHospital><PatientQueue /></ProtectedRoute>} />
+        <Route path="/patient/dashboard"     element={<ProtectedRoute requireHospital><Dashboard /></ProtectedRoute>} />
+        <Route path="/patient/appointments"  element={<ProtectedRoute allowedRoles={['patient']}><MyAppointments /></ProtectedRoute>} />
+        <Route path="/patient/history"       element={<ProtectedRoute><TokenHistory /></ProtectedRoute>} />
+        <Route path="/patient/queue"         element={<ProtectedRoute requireHospital><PatientQueue /></ProtectedRoute>} />
 
         {/* ── Admin Panel Routes ─────────────── */}
         <Route

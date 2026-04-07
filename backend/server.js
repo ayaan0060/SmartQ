@@ -148,6 +148,8 @@ app.use('/api/ambulances', require('./routes/ambulanceRoutes'));
 app.use('/api/staff', require('./routes/staffRoutes'));
 app.use('/api/emergency', require('./routes/emergencyRoutes'));
 app.use('/api/appointments', require('./routes/appointmentRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/staff-portal', require('./routes/staffPortalRoutes'));
 
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'SmartQ API is running', ts: new Date() });
@@ -181,6 +183,14 @@ io.on('connection', (socket) => {
     if (tokenId) {
       socket.join(`token:${tokenId}`);
       console.log(`↳ Joined token room: ${tokenId}`);
+    }
+  });
+
+  // User joins their personal notification room
+  socket.on('join:user', (userId) => {
+    if (userId) {
+      socket.join(`user:${userId}`);
+      console.log(`↳ Joined user room: ${userId}`);
     }
   });
 
