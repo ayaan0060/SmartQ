@@ -1,0 +1,47 @@
+services:
+  # ── SmartQ Backend (Node/Express) ─────────────────────────────
+  - type: web
+    name: smartq-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5001
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      - key: CLIENT_URL
+        sync: false
+      - key: BCRYPT_SALT_ROUNDS
+        value: 12
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX
+        value: 200
+      - key: AUTH_RATE_LIMIT_MAX
+        value: 20
+      - key: SOCKET_PING_TIMEOUT
+        value: 60000
+    healthCheckPath: /api/health
+
+  # ── SmartQ Frontend (Vite/React) ──────────────────────────────
+  - type: web
+    name: smartq-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+      - key: VITE_SOCKET_URL
+        sync: false
+      - key: VITE_TRIAGE_BOT_URL
+        sync: false

@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight, ShieldCheck, Zap, Heart, Brain,
-  Wifi, Lock, LogOut, QrCode, Moon, Sun,
+  Wifi, Lock, LogOut, QrCode, Moon, Sun, X, Stethoscope,
 } from 'lucide-react';
 import { useAuthStore } from '../features/auth/useAuthStore';
 import { AuthService } from '../features/auth/AuthService';
@@ -17,6 +17,7 @@ export default function Home() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
   const { theme, toggle } = useTheme();
+  const [chatOpen, setChatOpen] = useState(false);
 
   const handleLogout = () => { AuthService.logout(); navigate('/login'); };
 
@@ -340,6 +341,68 @@ export default function Home() {
       </section>
 
       <Footer />
+
+      {/* ── Floating Triage Chatbot Button ── */}
+      <motion.button
+        onClick={() => setChatOpen(true)}
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.95 }}
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3 bg-primary text-on-primary rounded-2xl shadow-2xl font-bold text-sm"
+        style={{ boxShadow: '0 8px 32px rgba(203,32,45,0.4)' }}
+      >
+        <Stethoscope size={20} />
+        AI Triage
+        <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+      </motion.button>
+
+      {/* ── Chatbot Overlay ── */}
+      <AnimatePresence>
+        {chatOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
+            onClick={(e) => { if (e.target === e.currentTarget) setChatOpen(false); }}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0, y: 30 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 30 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+              className="relative w-full max-w-4xl mx-4"
+              style={{ height: '85vh' }}
+            >
+              {/* Header bar */}
+              <div className="flex items-center justify-between px-5 py-3 bg-zinc-900 rounded-t-2xl border-b border-zinc-700">
+                <div className="flex items-center gap-3">
+                  <Stethoscope size={18} className="text-primary" />
+                  <span className="font-bold text-white text-sm">Healthcare Triage Bot</span>
+                  <span className="flex items-center gap-1 text-xs text-green-400 font-semibold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> Live
+                  </span>
+                </div>
+                <button
+                  onClick={() => setChatOpen(false)}
+                  className="w-8 h-8 flex items-center justify-center rounded-xl bg-zinc-800 hover:bg-zinc-700 transition-colors text-zinc-400 hover:text-white"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Iframe */}
+              <iframe
+                src={`${import.meta.env.VITE_TRIAGE_BOT_URL || 'http://localhost:3000'}?name=${encodeURIComponent(user?.name || '')}&role=${encodeURIComponent(user?.role || 'Patient')}`}
+                className="w-full rounded-b-2xl border-0"
+                style={{ height: 'calc(85vh - 52px)' }}
+                title="Healthcare Triage Bot"
+                allow="microphone"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -90,7 +90,8 @@ app.use(cors({
 // Security headers — set manually without helmet to avoid new dependency
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
+  // Allow triage bot iframe to be embedded in SmartQ
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
@@ -301,8 +302,7 @@ io.on('connection', (socket) => {
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/smartq';
 
 const mongooseOptions = {
-  tls: true,
-  tlsAllowInvalidCertificates: false,
+  autoIndex: true,
   retryWrites: true,
   serverSelectionTimeoutMS: 15000,
   socketTimeoutMS: 45000,
