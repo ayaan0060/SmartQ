@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.venv/
+*.egg-info/
+
+# Logs
+*.log
+
+# Environment files — NEVER commit credentials
+.env
+backend/.env
+frontend/.env
+knowledge-graph/.env
+
+# Generated files
+*.pdf
+backend/sample_report.pdf
+
+# Node
+node_modules/
+frontend/node_modules/
+
+# Build
+build/
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

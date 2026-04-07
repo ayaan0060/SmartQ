@@ -1,0 +1,30 @@
+services:
+  # ── Triage Bot Backend (FastAPI) ──────────────────────────────
+  - type: web
+    name: triage-bot-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: MONGO_DB_NAME
+        value: triage_db
+      - key: NEO4J_URI
+        sync: false
+      - key: NEO4J_USER
+        sync: false
+      - key: NEO4J_PASSWORD
+        sync: false
+    healthCheckPath: /health
+
+  # ── Triage Bot Frontend (React) ───────────────────────────────
+  - type: web
+    name: triage-bot-frontend
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./frontend/build
+    rootDir: frontend
+    envVars:
+      - key: REACT_APP_API_URL
+        sync: false
