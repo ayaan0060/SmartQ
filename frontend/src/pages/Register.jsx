@@ -9,7 +9,9 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
 const ROLES = [
-  { value: 'patient', label: 'Patient — Book appointments & track queue' },
+  { value: 'patient',  label: 'Patient — Book appointments & track queue' },
+  { value: 'doctor',   label: 'Doctor — Manage your patient queue' },
+  { value: 'staff',    label: 'Staff — Queue and ward support' },
 ];
 
 const STEPS = [
@@ -32,7 +34,7 @@ export default function Register() {
   const [showPass, setShowPass]   = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const needsHospital = form.role === 'staff';
+  const needsHospital = form.role !== 'patient';
 
   useEffect(() => {
     if (user) navigate(['super-admin', 'hospital-admin', 'staff'].includes(user.role) ? '/admin' : '/select-hospital', { replace: true });
@@ -90,6 +92,7 @@ export default function Register() {
       const body = {
         name: form.name.trim(),
         password: form.password,
+        role: form.role,
         ...(regMethod === 'email' ? { email: form.email.trim().toLowerCase() } : { phone: form.phone.trim() }),
         ...(needsHospital && form.hospitalId ? { hospitalId: form.hospitalId } : {}),
       };

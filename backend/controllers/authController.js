@@ -16,7 +16,11 @@ const signToken = (user) =>
 // ── POST /api/auth/register — patient accounts only ───────────────────────────
 const register = asyncHandler(async (req, res) => {
   // Validation handled by middleware/validate.js registerRules
-  const { name, email, phone, password } = req.body;
+  const { name, email, phone, password, role: rawRole } = req.body;
+
+  // Only allow self-registerable roles — never admin roles from public endpoint
+  const ALLOWED_ROLES = ['patient', 'doctor', 'staff'];
+  const role = ALLOWED_ROLES.includes(rawRole) ? rawRole : 'patient';
 
   // Duplicate check
   if (email) {
@@ -35,8 +39,8 @@ const register = asyncHandler(async (req, res) => {
     email: email ? email.toLowerCase().trim() : undefined,
     phone: phone ? phone.replace(/\s/g, '') : undefined,
     password,
-    role: 'patient',
-    hospitalId: null,
+    role,
+    hospitalId: req.body.hospitalId || null,
   });
 
   logRegister(req, user._id, 'patient');
