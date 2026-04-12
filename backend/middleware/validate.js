@@ -28,7 +28,7 @@ const emailRules = (field = 'email') =>
     .optional({ nullable: true, checkFalsy: true })
     .trim()
     .isEmail().withMessage('Enter a valid email address')
-    .normalizeEmail()
+    .normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false, outlookdotcom_remove_subaddress: false, yahoo_remove_subaddress: false, icloud_remove_subaddress: false })
     .isLength({ max: 254 }).withMessage('Email too long');
 
 const phoneRules = (field = 'phone') =>

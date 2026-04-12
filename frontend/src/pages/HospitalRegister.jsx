@@ -42,9 +42,8 @@ const STEPS = [
 
 /* ---------- validation helpers ---------- */
 const FAKE_NAME_PATTERNS = [
-  /^(test|fake|dummy|sample|asdf|qwerty|abc|xyz|foo|bar|hospital123)/i,
-  /(.)(\1){4,}/,
-  /^[^a-zA-Z]/,
+  /^(test123|fake123|dummy123|hospital123)/i,
+  /(.)(\1){6,}/,
 ];
 const BLACKLISTED_CODES = ['TEST','FAKE','DEMO','XXXX','AAAA','ABCD','1234','ASDF'];
 const DISPOSABLE_DOMAINS = [
@@ -76,8 +75,8 @@ const validate = (fields) => {
 
   if (!fields.address?.trim())
     e.address = 'Full address is required';
-  else if (fields.address.trim().length < 10)
-    e.address = 'Please enter a full address (min 10 characters)';
+  else if (fields.address.trim().length < 5)
+    e.address = 'Please enter a full address (min 5 characters)';
 
   if (!fields.timings?.trim())
     e.timings = 'Operating hours are required';

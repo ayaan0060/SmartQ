@@ -10,7 +10,6 @@ import Footer from '../components/Footer';
 
 const ROLES = [
   { value: 'patient', label: 'Patient — Book appointments & track queue' },
-  { value: 'staff',   label: 'Staff — Assist with queue management' },
 ];
 
 const STEPS = [
@@ -74,9 +73,9 @@ export default function Register() {
     if (!form.name.trim() || form.name.length < 2) e.name = 'Name must be at least 2 characters';
     if (regMethod === 'email' && (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))) e.email = 'Enter a valid email address';
     if (!form.password || form.password.length < 8) e.password = 'Password must be at least 8 characters';
-    if (!/[A-Z]/.test(form.password)) e.password = 'Password must contain at least one uppercase letter';
-    if (!/[0-9]/.test(form.password)) e.password = 'Password must contain at least one number';
-    if (!/[^A-Za-z0-9]/.test(form.password)) e.password = 'Password must contain at least one special character';
+    else if (!/[A-Z]/.test(form.password)) e.password = 'Password must contain at least one uppercase letter';
+    else if (!/[0-9]/.test(form.password)) e.password = 'Password must contain at least one number';
+    else if (!/[^A-Za-z0-9]/.test(form.password)) e.password = 'Password must contain at least one special character';
     if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match';
     if (needsHospital && !form.hospitalId) e.hospitalId = 'Please select your hospital';
     return e;
@@ -88,12 +87,13 @@ export default function Register() {
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setLoading(true);
     try {
-      await api.post('/auth/register', {
+      const body = {
         name: form.name.trim(),
-        email: form.email.trim().toLowerCase(),
         password: form.password,
+        ...(regMethod === 'email' ? { email: form.email.trim().toLowerCase() } : { phone: form.phone.trim() }),
         ...(needsHospital && form.hospitalId ? { hospitalId: form.hospitalId } : {}),
-      });
+      };
+      await api.post('/auth/register', body);
       toast.success('Account created! Please log in to continue.');
       navigate('/login');
     } catch (err) {

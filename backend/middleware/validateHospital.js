@@ -2,12 +2,8 @@ const { body, validationResult } = require('express-validator');
 
 // ── Fake detection patterns ───────────────────────────────────────────────────
 const FAKE_NAME_PATTERNS = [
-  /^(test|fake|dummy|sample|asdf|qwerty|abc|xyz|foo|bar|baz|hospital123|aaa|bbb|ccc|ddd|eee|fff|ggg|hhh|iii|jjj|kkk|lll|mmm|nnn|ooo|ppp|qqq|rrr|sss|ttt|uuu|vvv|www|xxx|yyy|zzz)/i,
-  /(.)(\1){3,}/,           // 4+ repeated chars: "aaaa", "hhhh"
-  /^[^a-zA-Z]/,            // starts with non-letter
-  /^(.{1,2})$/,            // too short (1-2 chars)
-  /^[a-z]{1,3}\d+$/i,      // like "abc123"
-  /hospital\s*(1|2|test|demo|fake|sample)/i,
+  /^(test123|fake123|dummy123|hospital123)/i,
+  /(.)(\1){6,}/,           // 7+ repeated chars
 ];
 
 const FAKE_LOCATION_PATTERNS = [
@@ -16,8 +12,7 @@ const FAKE_LOCATION_PATTERNS = [
 ];
 
 const FAKE_ADDRESS_PATTERNS = [
-  /^(test|fake|dummy|asdf|qwerty|123\s*main|123\s*street|no address|na|n\/a)/i,
-  /(.)(\1){4,}/,
+  /^(test|fake|dummy|na|n\/a)/i,
 ];
 
 const BLACKLISTED_CODES = [
@@ -35,9 +30,7 @@ const DISPOSABLE_EMAIL_DOMAINS = [
 ];
 
 const FAKE_ADMIN_NAME_PATTERNS = [
-  /^(test|fake|admin|user|doctor|staff|asdf|qwerty|abc|xyz|foo|bar)/i,
-  /(.)(\1){3,}/,
-  /^[^a-zA-Z]/,
+  /^(test|fake|asdf|qwerty)/i,
 ];
 
 function isFake(val, patterns) {
@@ -63,10 +56,9 @@ const hospitalRegistrationRules = [
   body('name')
     .trim()
     .notEmpty().withMessage('Hospital name is required')
-    .isLength({ min: 5, max: 100 }).withMessage('Name must be at least 5 characters')
+    .isLength({ min: 3, max: 100 }).withMessage('Name must be at least 3 characters')
     .custom((val) => {
-      if (isFake(val, FAKE_NAME_PATTERNS)) throw new Error('Hospital name appears to be invalid or test data');
-      if (!isValidHospitalName(val)) throw new Error('Please enter a valid hospital name (e.g. "City General Hospital")');
+      if (isFake(val, FAKE_NAME_PATTERNS)) throw new Error('Hospital name appears to be invalid');
       return true;
     }),
 
@@ -92,11 +84,9 @@ const hospitalRegistrationRules = [
   body('address')
     .trim()
     .notEmpty().withMessage('Address is required')
-    .isLength({ min: 15, max: 300 }).withMessage('Please enter a complete address (min 15 characters)')
+    .isLength({ min: 5, max: 300 }).withMessage('Please enter a complete address (min 5 characters)')
     .custom((val) => {
       if (isFake(val, FAKE_ADDRESS_PATTERNS)) throw new Error('Address appears to be invalid');
-      // Must contain at least one number (street number / pincode)
-      if (!/\d/.test(val)) throw new Error('Address must include a street number or pincode');
       return true;
     }),
 
@@ -121,11 +111,9 @@ const hospitalRegistrationRules = [
   body('adminName')
     .trim()
     .notEmpty().withMessage('Admin name is required')
-    .isLength({ min: 3, max: 80 }).withMessage('Name must be at least 3 characters')
+    .isLength({ min: 2, max: 80 }).withMessage('Name must be at least 2 characters')
     .custom((val) => {
       if (isFake(val, FAKE_ADMIN_NAME_PATTERNS)) throw new Error('Admin name appears to be invalid');
-      const words = val.trim().split(/\s+/);
-      if (words.length < 2) throw new Error('Please enter your full name (first and last name)');
       return true;
     }),
 
