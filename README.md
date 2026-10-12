@@ -18,7 +18,7 @@ SmartQ is a full-stack hospital queue management system that eliminates physical
 - [Security](#security)
 - [Deployment](#deployment)
 
----
+--
 
 ## Tech Stack
 
